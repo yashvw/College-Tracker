@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Habit Export</title>
+</head>
+<body>
+    <h1>Test Habit Export</h1>
+    <button onclick="setupTestData()">Setup Test Data</button>
+    <button onclick="viewData()">View Data in Console</button>
+    <p>1. Click "Setup Test Data" to add test habits with completion marks</p>
+    <p>2. Go to http://localhost:3001</p>
+    <p>3. Open the Habit Tracker modal</p>
+    <p>4. Click Export Habits</p>
+    <p>5. Select the test habit and click Export</p>
+    
+    <script>
+        function setupTestData() {
+            // Create test habits with completion data
+            const testHabits = [
+                {
+                    id: "test1",
+                    name: "Morning Run",
+                    completions: {
+                        "2025-01-01": true,
+                        "2025-01-02": true,
+                        "2025-01-03": false,
+                        "2025-01-04": true,
+                        "2025-01-05": false,
+                        "2025-01-06": true,
+                        "2025-01-07": true,
+                        "2025-01-08": true,
+                        "2025-01-09": false,
+                        "2025-01-10": true,
+                        "2025-01-11": true,
+                        "2025-01-12": true,
+                        "2025-01-13": false,
+                        "2025-01-14": true,
+                        "2025-01-15": true,
+                        "2025-01-16": true,
+                        "2025-01-17": false,
+                        "2025-01-18": true,
+                        "2025-01-19": true,
+                        "2025-01-20": false,
+                    },
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: "test2",
+                    name: "Reading",
+                    completions: {
+                        "2025-01-01": true,
+                        "2025-01-02": false,
+                        "2025-01-03": true,
+                        "2025-01-04": true,
+                        "2025-01-05": true,
+                        "2025-01-08": true,
+                        "2025-01-10": true,
+                        "2025-01-12": false,
+                        "2025-01-15": true,
+                        "2025-01-18": true,
+                        "2025-01-20": true,
+                    },
+                    createdAt: new Date().toISOString()
+                }
+            ];
+            
+            localStorage.setItem("habits", JSON.stringify(testHabits));
+            alert("Test data added! Refresh http://localhost:3001 to see the habits.");
+            console.log("Test habits:", testHabits);
+        }
+        
+        function viewData() {
+            const habits = JSON.parse(localStorage.getItem("habits") || "[]");
+            console.log("Current habits in localStorage:", habits);
+            habits.forEach(h => {
+                console.log(`Habit: ${h.name}`);
+                console.log(`  Completions:`, h.completions);
+            });
+        }
+    </script>
+</body>
+</html>
