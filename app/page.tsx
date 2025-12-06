@@ -15,10 +15,14 @@ import EditSubjectModal from "@/components/edit-subject-modal"
 import TodoListModal from "@/components/todo-list-modal"
 import HabitTrackerModal from "@/components/habit-tracker-modal"
 
-import { InfoIcon, BellIcon, SettingsIcon, CalendarIcon, PlusIcon } from "@/components/icons"
-import { X } from "lucide-react"
+import { Info, Bell, Settings, Calendar, Plus, X, Trash2 } from "lucide-react"
 import NotificationSchedule from '@/components/notification-schedule'
 import ClientDate from "@/components/client-date"
+import { Button } from "@/components/ui/button"
+import { ThemeToggle } from "@/components/theme-toggle"
+import { Badge } from "@/components/ui/badge"
+import { Card, CardContent } from "@/components/ui/card"
+import { cn } from "@/lib/utils"
 
 interface Subject {
   id: string
@@ -619,19 +623,21 @@ export default function Home() {
 
   if (currentPage === "todos") {
     return (
-      <div className="min-h-screen bg-black text-white flex flex-col">
-        <div className="px-4 sm:px-6 pt-6 sm:pt-8 pb-4 sm:pb-6">
-          <button
+      <div className="min-h-screen bg-background text-foreground flex flex-col">
+        <div className="px-4 sm:px-6 pt-6 sm:pt-8 pb-4 sm:pb-6 border-b">
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => setCurrentPage("attendance")}
-            className="text-green-500 text-xs sm:text-sm mb-4 hover:text-green-400 transition"
+            className="mb-4 -ml-2"
           >
             ← Back to Attendance
-          </button>
-          <h1 className="text-2xl sm:text-4xl font-bold mb-2">To-Do List</h1>
-          <p className="text-gray-500 text-xs sm:text-sm">Manage your daily tasks</p>
+          </Button>
+          <h1 className="text-2xl sm:text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+            To-Do List
+          </h1>
+          <p className="text-muted-foreground text-xs sm:text-sm">Manage your daily tasks</p>
         </div>
-
-        <div className="h-1 bg-green-500 mb-4 sm:mb-6"></div>
 
         <div className="flex-1 px-4 sm:px-6 pb-24">
           <div className="max-w-2xl w-full">
@@ -653,34 +659,42 @@ export default function Home() {
 
   if (currentPage === "exams") {
     return (
-      <div className="min-h-screen bg-black text-white flex flex-col">
-        <div className="px-4 sm:px-6 pt-6 sm:pt-8 pb-4 sm:pb-6">
-          <button
+      <div className="min-h-screen bg-background text-foreground flex flex-col">
+        <div className="px-4 sm:px-6 pt-6 sm:pt-8 pb-4 sm:pb-6 border-b">
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => setCurrentPage("attendance")}
-            className="text-green-500 text-xs sm:text-sm mb-4 hover:text-green-400 transition"
+            className="mb-4 -ml-2"
           >
             ← Back to Attendance
-          </button>
-          <h1 className="text-2xl sm:text-4xl font-bold mb-2">Exams and Assignments</h1>
-          <p className="text-gray-500 text-xs sm:text-sm">Manage your deadlines</p>
+          </Button>
+          <h1 className="text-2xl sm:text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+            Exams & Assignments
+          </h1>
+          <p className="text-muted-foreground text-xs sm:text-sm">Manage your deadlines</p>
         </div>
 
-        <div className="h-1 bg-green-500 mb-4 sm:mb-6"></div>
-
-        <div className="flex-1 px-4 sm:px-6 pb-24 overflow-y-auto">
+        <div className="flex-1 px-4 sm:px-6 pb-24 overflow-y-auto pt-6">
           <div className="max-w-4xl w-full">
-            <button
+            <Button
               onClick={() => setIsCalendarOpen(true)}
-              className="mb-4 sm:mb-6 px-3 sm:px-4 py-2 bg-green-500 hover:bg-green-600 text-black font-medium rounded-lg transition text-sm sm:text-base"
+              className="mb-4 sm:mb-6"
+              size="default"
             >
-              + Add Task
-            </button>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Task
+            </Button>
 
             <div className="space-y-3 sm:space-y-4">
               {tasks.length === 0 ? (
-                <p className="text-gray-500 text-center py-8 text-xs sm:text-base">
-                  No tasks yet. Click "Add Task" to create one.
-                </p>
+                <Card>
+                  <CardContent className="py-12">
+                    <p className="text-muted-foreground text-center text-sm">
+                      No tasks yet. Click "Add Task" to create one.
+                    </p>
+                  </CardContent>
+                </Card>
               ) : (
                 tasks.map((task) => {
                   const dueDate = new Date(task.dueDate)
@@ -692,35 +706,49 @@ export default function Home() {
                   const isToday = daysUntil === 0
 
                   return (
-                    <div
-                      key={task.id}
-                      className="bg-gray-900 rounded-lg p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-sm sm:text-lg font-semibold">{task.title}</h3>
-                        <p className="text-gray-500 text-xs sm:text-sm">
-                          {task.type === "exam" ? "Exam" : "Assignment"} • {dueDate.toLocaleDateString()}
-                          {(task.remindDaysBefore || 0) > 0 && ` • Remind ${task.remindDaysBefore}d before`}
-                        </p>
-                      </div>
-                      <div
-                        className={`text-right ${isOverdue ? "text-red-500" : isToday ? "text-yellow-500" : "text-gray-400"}`}
-                      >
-                        {isOverdue ? (
-                          <p className="font-semibold text-xs sm:text-base">{Math.abs(daysUntil)} days overdue</p>
-                        ) : isToday ? (
-                          <p className="font-semibold text-xs sm:text-base">Today</p>
-                        ) : (
-                          <p className="font-semibold text-xs sm:text-base">{daysUntil} days left</p>
-                        )}
-                      </div>
-                      <button
-                        onClick={() => setTasks(tasks.filter((t) => t.id !== task.id))}
-                        className="ml-0 sm:ml-4 px-2 sm:px-3 py-1 bg-red-900 hover:bg-red-800 text-red-300 rounded transition text-xs sm:text-sm w-full sm:w-auto"
-                      >
-                        Delete
-                      </button>
-                    </div>
+                    <Card key={task.id} className={cn(isOverdue && "border-destructive/50")}>
+                      <CardContent className="p-4 sm:p-6">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                          <div className="flex-1 min-w-0 space-y-2">
+                            <div className="flex items-start gap-2">
+                              <Badge variant={task.type === "exam" ? "default" : "secondary"} className="shrink-0">
+                                {task.type === "exam" ? "Exam" : "Assignment"}
+                              </Badge>
+                              <h3 className="text-sm sm:text-base font-semibold flex-1">{task.title}</h3>
+                            </div>
+                            <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                              <span>{dueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                              {(task.remindDaysBefore || 0) > 0 && (
+                                <Badge variant="outline" className="text-[10px] h-5">
+                                  Remind {task.remindDaysBefore}d before
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-3">
+                            <Badge
+                              variant={isOverdue ? "destructive" : isToday ? "default" : "outline"}
+                              className="text-xs font-semibold"
+                            >
+                              {isOverdue
+                                ? `${Math.abs(daysUntil)}d overdue`
+                                : isToday
+                                  ? "Today"
+                                  : `${daysUntil}d left`}
+                            </Badge>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive hover:text-destructive"
+                              onClick={() => setTasks(tasks.filter((t) => t.id !== task.id))}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
                   )
                 })
               )}
@@ -743,27 +771,29 @@ export default function Home() {
 
   if (currentPage === "habits") {
     return (
-      <div className="min-h-screen bg-black text-white flex flex-col">
-        <div className="px-4 sm:px-6 pt-6 sm:pt-8 pb-4 sm:pb-6">
-          <button
+      <div className="min-h-screen bg-background text-foreground flex flex-col">
+        <div className="px-4 sm:px-6 pt-6 sm:pt-8 pb-4 sm:pb-6 border-b">
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => setCurrentPage("attendance")}
-            className="text-green-500 text-xs sm:text-sm mb-4 hover:text-green-400 transition"
+            className="mb-4 -ml-2"
           >
             ← Back to Attendance
-          </button>
+          </Button>
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div>
-              <h1 className="text-2xl sm:text-4xl font-bold mb-2">Habit Tracker</h1>
-              <p className="text-gray-500 text-xs sm:text-sm">Track your daily habits</p>
+              <h1 className="text-2xl sm:text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                Habit Tracker
+              </h1>
+              <p className="text-muted-foreground text-xs sm:text-sm">Track your daily habits</p>
             </div>
             <div className="text-right">
-              <p className="text-xs sm:text-sm text-gray-500">Today</p>
-              <p className="text-base sm:text-lg font-semibold text-green-500">{currentDate}</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">Today</p>
+              <p className="text-base sm:text-lg font-semibold text-primary">{currentDate}</p>
             </div>
           </div>
         </div>
-
-        <div className="h-1 bg-green-500 mb-4 sm:mb-6"></div>
 
         <div className="flex-1 px-4 sm:px-6 pb-24 overflow-y-auto">
           <div className="max-w-2xl w-full">
@@ -783,15 +813,17 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col overflow-hidden">
+    <div className="min-h-screen bg-background text-foreground flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="px-4 sm:px-6 pt-6 sm:pt-8 pb-4 sm:pb-6">
-        <div className="text-xs sm:text-sm text-gray-500 mb-2">
+      <div className="px-4 sm:px-6 pt-6 sm:pt-8 pb-4 sm:pb-6 border-b">
+        <div className="text-xs sm:text-sm text-muted-foreground mb-2">
           <ClientDate />
         </div>
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-0">
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl sm:text-4xl font-bold mb-2 break-words">Your Attendance</h1>
+            <h1 className="text-2xl sm:text-4xl font-bold mb-2 break-words bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+              Your Attendance
+            </h1>
             {upcomingInfo && (
               <p className="text-gray-400 text-xs sm:text-sm mt-3 flex items-center gap-2 flex-wrap">
                 <span className="w-2 h-2 sm:w-3 sm:h-3 bg-red-500 rounded-full animate-pulse-glow flex-shrink-0"></span>
@@ -816,70 +848,73 @@ export default function Home() {
             )}
           </div>
           <div className="flex gap-2 flex-shrink-0 flex-wrap items-center">
-            <button
+            <ThemeToggle />
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => setShowTutorial(true)}
-              className="p-2 rounded-lg bg-gray-900 hover:bg-gray-800 transition flex-shrink-0 text-green-500"
               title="View tutorial"
             >
-              <InfoIcon />
-            </button>
-            <button
+              <Info className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => setIsScheduleOpen(true)}
-              className="p-2 rounded-lg bg-gray-900 hover:bg-gray-800 transition flex-shrink-0 text-yellow-400"
               title="Set notification schedule"
             >
-              <BellIcon />
-            </button>
-            <button
+              <Bell className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsTaskPreviewOpen(true)}
+              title="View tasks"
+            >
+              <Calendar className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => setIsTagManagementOpen(true)}
-              className="p-2 rounded-lg bg-gray-900 hover:bg-gray-800 transition flex-shrink-0 text-purple-400"
               title="Settings"
             >
-              <SettingsIcon />
-            </button>
-            <button
-              onClick={() => setIsTaskPreviewOpen(true)}
-              className="p-2 rounded-lg bg-gray-900 hover:bg-gray-800 transition flex-shrink-0 text-cyan-400"
-            >
-              <CalendarIcon />
-            </button>
-            <button
+              <Settings className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="default"
+              size="icon"
               onClick={() => setIsModalOpen(true)}
-              className="p-2 rounded-lg bg-gray-900 hover:bg-gray-800 transition flex-shrink-0 text-orange-400"
+              title="Add subject"
             >
-              <PlusIcon />
-            </button>
+              <Plus className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       </div>
 
-      {/* Green Divider */}
-      <div className="h-1 bg-green-500 mb-4 sm:mb-6"></div>
-
       {/* Main Content - Grid Layout */}
       <div className="flex-1 px-4 sm:px-6 pb-24 overflow-y-auto">
         {allTags.length > 0 && (
-          <div className="mb-4 sm:mb-6 flex flex-wrap gap-2">
-            <button
+          <div className="mb-4 sm:mb-6 flex flex-wrap gap-2 pt-4">
+            <Badge
+              variant={selectedTags.length === 0 ? "default" : "outline"}
+              className="cursor-pointer px-3 py-1.5 text-xs sm:text-sm"
               onClick={() => setSelectedTags([])}
-              className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium transition ${
-                selectedTags.length === 0 ? "bg-green-500 text-black" : "bg-gray-800 text-gray-400 hover:bg-gray-700"
-              }`}
             >
               All
-            </button>
+            </Badge>
             {allTags.map((tag) => (
-              <button
+              <Badge
                 key={tag}
+                variant={selectedTags.includes(tag) ? "default" : "outline"}
+                className="cursor-pointer px-3 py-1.5 text-xs sm:text-sm"
                 onClick={() => {
                   setSelectedTags(selectedTags.includes(tag) ? [] : [tag])
                 }}
-                className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium transition ${
-                  selectedTags.includes(tag) ? "bg-green-500 text-black" : "bg-gray-800 text-gray-400 hover:bg-gray-700"
-                }`}
               >
                 {tag}
-              </button>
+              </Badge>
             ))}
           </div>
         )}

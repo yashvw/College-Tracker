@@ -4,6 +4,9 @@ import { useState } from "react"
 import { Minus, Plus, Trash2, Edit } from "lucide-react"
 import CircularProgress from "./circular-progress"
 import DeleteConfirmationModal from "./delete-confirmation-modal"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 
 interface AttendanceCardProps {
   subjectId: string
@@ -67,95 +70,114 @@ export default function AttendanceCard({
 
   return (
     <>
-      <div
-        className={`rounded-2xl p-6 h-full flex flex-col justify-between relative ${
-          isBelowRequirement ? "bg-red-950" : "bg-gray-900"
-        }`}
-      >
-        <div className="absolute top-4 right-4 flex gap-2">
-          <button
-            onClick={onEdit}
-            className="p-1.5 rounded-lg border-2 border-blue-500 hover:bg-blue-500 hover:bg-opacity-10 transition"
-            title="Edit subject"
-          >
-            <Edit className="w-4 h-4 text-blue-500" />
-          </button>
-          <button
-            onClick={handleDeleteClick}
-            className="p-1.5 rounded-lg border-2 border-red-500 hover:bg-red-500 hover:bg-opacity-10 transition"
-          >
-            <Trash2 className="w-4 h-4 text-red-500" />
-          </button>
-        </div>
-
-        {/* Header */}
-        <h2 className="text-xl font-bold mb-4 pr-12">{subject}</h2>
-
-        {/* Stats and Progress */}
-        <div className="flex justify-between items-center mb-4 flex-1">
-          <div className="space-y-2 text-sm">
-            <div className="flex items-center gap-2">
-              <span className="text-lg font-bold">{attended}</span>
-              <span className="text-gray-500 text-xs">Attended</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-lg font-bold">{missed}</span>
-              <span className="text-gray-500 text-xs">Missed</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-lg font-bold">{total}</span>
-              <span className="text-gray-500 text-xs">Total</span>
+      <Card className={`h-full flex flex-col ${isBelowRequirement ? "border-destructive/50 bg-destructive/5" : ""}`}>
+        <CardHeader className="pb-3">
+          <div className="flex items-start justify-between gap-2">
+            <CardTitle className="text-lg font-semibold leading-tight">{subject}</CardTitle>
+            <div className="flex gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={onEdit}
+                title="Edit subject"
+              >
+                <Edit className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-destructive hover:text-destructive"
+                onClick={handleDeleteClick}
+                title="Delete subject"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
             </div>
           </div>
+        </CardHeader>
 
-          <div className="flex-shrink-0">
-            <CircularProgress percentage={percentage} glowColor={effectiveGlowColor} />
-          </div>
-        </div>
+        <CardContent className="flex-1 flex flex-col justify-between space-y-4">
+          {/* Stats and Progress */}
+          <div className="flex justify-between items-center">
+            <div className="space-y-2">
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-bold">{attended}</span>
+                <span className="text-xs text-muted-foreground">Attended</span>
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-bold">{missed}</span>
+                <span className="text-xs text-muted-foreground">Missed</span>
+              </div>
+              <div className="flex items-baseline gap-2 pt-1 border-t">
+                <span className="text-lg font-semibold">{total}</span>
+                <span className="text-xs text-muted-foreground">Total</span>
+              </div>
+            </div>
 
-        {/* Requirement - Dynamic Message */}
-        <div className="mb-4">
-          <p className="text-white font-medium text-sm mb-1">{skipMessage}</p>
-          <p className="text-gray-500 text-xs">Requirement : {requirement}%</p>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex items-center justify-between gap-2 text-xs">
-          {/* Attended Controls */}
-          <div className="flex items-center gap-2">
-            <span className="text-gray-500">Attended</span>
-            <button
-              onClick={onAttendedDecrease}
-              className="p-1.5 rounded-full border border-gray-700 hover:border-gray-600 transition"
-            >
-              <Minus className="w-3 h-3 text-gray-400" />
-            </button>
-            <button
-              onClick={onAttendedIncrease}
-              className="p-1.5 rounded-full bg-green-500 hover:bg-green-600 transition"
-            >
-              <Plus className="w-3 h-3 text-black" />
-            </button>
+            <div className="flex-shrink-0">
+              <CircularProgress percentage={percentage} glowColor={effectiveGlowColor} />
+            </div>
           </div>
 
-          {/* Missed Controls */}
-          <div className="flex items-center gap-2">
-            <span className="text-gray-500">Missed</span>
-            <button
-              onClick={onMissedDecrease}
-              className="p-1.5 rounded-full border border-gray-700 hover:border-gray-600 transition"
-            >
-              <Minus className="w-3 h-3 text-gray-400" />
-            </button>
-            <button
-              onClick={onMissedIncrease}
-              className="p-1.5 rounded-full bg-green-500 hover:bg-green-600 transition"
-            >
-              <Plus className="w-3 h-3 text-black" />
-            </button>
+          {/* Requirement Badge and Message */}
+          <div className="space-y-2">
+            <Badge variant={isBelowRequirement ? "destructive" : "secondary"} className="font-normal">
+              {skipMessage}
+            </Badge>
+            <p className="text-xs text-muted-foreground">Target: {requirement}%</p>
           </div>
-        </div>
-      </div>
+
+          {/* Action Buttons */}
+          <div className="grid grid-cols-2 gap-3 pt-2">
+            {/* Attended Controls */}
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground text-center">Attended</p>
+              <div className="flex justify-center gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={onAttendedDecrease}
+                >
+                  <Minus className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  variant="default"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={onAttendedIncrease}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Missed Controls */}
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground text-center">Missed</p>
+              <div className="flex justify-center gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={onMissedDecrease}
+                >
+                  <Minus className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={onMissedIncrease}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <DeleteConfirmationModal
         isOpen={isDeleteModalOpen}

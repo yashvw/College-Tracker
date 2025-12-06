@@ -2,6 +2,7 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Epilogue } from "next/font/google"
 import { Toaster } from "sonner"
+import { ThemeProvider } from "@/components/theme-provider"
 import "./globals.css"
 
 const epilogue = Epilogue({ subsets: ["latin"] })
@@ -44,8 +45,15 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
       </head>
       <body style={{ fontFamily: epilogue.style.fontFamily }} className="antialiased" suppressHydrationWarning>
-        {children}
-        <Toaster position="top-center" richColors />
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          {children}
+          <Toaster position="top-center" richColors />
+        </ThemeProvider>
       </body>
     </html>
   )
