@@ -202,20 +202,13 @@ export default function TagManagementModal({
       // Calculate scheduled time
       const scheduledTime = new Date(Date.now() + selectedDelay * 60 * 1000);
 
-      // Create schedule via API
-      const response = await fetch('/api/schedules', {
+      // Create schedule via QStash API
+      const response = await fetch('/api/notifications/schedule-qstash', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           subscription,
-          type: 'one-time',
-          title: '⏰ Scheduled Test Notification',
-          body: `This notification was scheduled ${selectedDelay} minute(s) ago. Auto-notifications are working! 🎉`,
-          scheduledTime: scheduledTime.toISOString(),
-          data: {
-            url: '/',
-            testNotification: true,
-          },
+          delayMinutes: selectedDelay,
         }),
       });
 
@@ -223,19 +216,19 @@ export default function TagManagementModal({
 
       if (response.ok) {
         toast.success(`Notification scheduled for ${selectedDelay} minute(s) from now!`, {
-          description: 'Vercel Cron will send it automatically. Close the app to test!',
+          description: 'Upstash QStash will send it automatically. Close the app to test!',
           duration: 4000,
         });
 
         // Add to scheduled list with countdown
         setScheduledNotifications(prev => [...prev, {
-          id: data.schedule.id,
-          scheduledTime: scheduledTime.toISOString(),
-          delayMinutes: selectedDelay,
+          id: data.scheduleId,
+          scheduledTime: data.scheduledTime,
+          delayMinutes: data.delayMinutes,
           countdown: selectedDelay * 60,
         }]);
       } else {
-        toast.error(data.error || 'Failed to schedule notification');
+        toast.error(data.error || data.message || 'Failed to schedule notification');
       }
     } catch (error) {
       console.error('Schedule notification error:', error);
@@ -246,22 +239,10 @@ export default function TagManagementModal({
   };
 
   const cancelScheduledNotification = async (scheduleId: string) => {
-    try {
-      const response = await fetch('/api/schedules', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: scheduleId }),
-      });
-
-      if (response.ok) {
-        toast.success('Scheduled notification cancelled');
-        setScheduledNotifications(prev => prev.filter(n => n.id !== scheduleId));
-      } else {
-        toast.error('Failed to cancel notification');
-      }
-    } catch (error) {
-      toast.error('Error cancelling notification');
-    }
+    // Note: QStash doesn't support cancelling scheduled messages in free tier
+    // So we just remove it from UI
+    toast.info('Removing from list. Note: QStash free tier cannot cancel scheduled messages.');
+    setScheduledNotifications(prev => prev.filter(n => n.id !== scheduleId));
   };
 
   const formatCountdown = (seconds: number) => {
