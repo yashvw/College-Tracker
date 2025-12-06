@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import webpush from 'web-push';
+import { getSubscriptions, removeSubscription } from '@/lib/subscription-store';
 
 // Configure web-push with VAPID keys
 const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
@@ -34,7 +35,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Get subscriptions from shared store
-    const { getSubscriptions, removeSubscription } = await import('@/lib/subscription-store');
     const subscriptions = getSubscriptions();
 
     if (subscriptions.length === 0) {
@@ -72,7 +72,6 @@ export async function POST(request: NextRequest) {
           console.error('❌ Failed to send to subscription:', error.message);
           // If subscription is invalid (410 Gone), remove it
           if (error.statusCode === 410) {
-            const { removeSubscription } = await import('@/lib/subscription-store');
             removeSubscription(subscription.endpoint);
           }
           throw error;
