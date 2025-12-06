@@ -199,13 +199,23 @@ export default function TagManagementModal({
         return;
       }
 
-      // Schedule notification
-      const response = await fetch('/api/notifications/schedule', {
+      // Calculate scheduled time
+      const scheduledTime = new Date(Date.now() + selectedDelay * 60 * 1000);
+
+      // Create schedule via API
+      const response = await fetch('/api/schedules', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           subscription,
-          delayMinutes: selectedDelay,
+          type: 'one-time',
+          title: '⏰ Scheduled Test Notification',
+          body: `This notification was scheduled ${selectedDelay} minute(s) ago. Auto-notifications are working! 🎉`,
+          scheduledTime: scheduledTime.toISOString(),
+          data: {
+            url: '/',
+            testNotification: true,
+          },
         }),
       });
 
@@ -213,16 +223,16 @@ export default function TagManagementModal({
 
       if (response.ok) {
         toast.success(`Notification scheduled for ${selectedDelay} minute(s) from now!`, {
-          description: 'You will receive a notification even if the app is closed.',
+          description: 'Vercel Cron will send it automatically. Close the app to test!',
           duration: 4000,
         });
 
-        // Add to scheduled list
+        // Add to scheduled list with countdown
         setScheduledNotifications(prev => [...prev, {
-          id: data.scheduleId,
-          scheduledTime: data.scheduledTime,
-          delayMinutes: data.delayMinutes,
-          countdown: data.delayMinutes * 60,
+          id: data.schedule.id,
+          scheduledTime: scheduledTime.toISOString(),
+          delayMinutes: selectedDelay,
+          countdown: selectedDelay * 60,
         }]);
       } else {
         toast.error(data.error || 'Failed to schedule notification');
@@ -237,10 +247,10 @@ export default function TagManagementModal({
 
   const cancelScheduledNotification = async (scheduleId: string) => {
     try {
-      const response = await fetch('/api/notifications/schedule', {
+      const response = await fetch('/api/schedules', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scheduleId }),
+        body: JSON.stringify({ id: scheduleId }),
       });
 
       if (response.ok) {
