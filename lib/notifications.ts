@@ -50,12 +50,19 @@ export async function registerServiceWorker() {
 
 export async function subscribeToPushNotifications() {
   try {
+    console.log('🔔 Starting push notification subscription...');
+
     const registration = await navigator.serviceWorker.ready;
+    console.log('✅ Service worker is ready');
 
     // Check if VAPID key is available
     const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+    console.log('🔑 VAPID key available:', !!vapidKey);
+    console.log('🔑 VAPID key (first 20 chars):', vapidKey ? vapidKey.substring(0, 20) + '...' : 'MISSING');
+
     if (!vapidKey) {
-      console.log('⚠️ VAPID key not configured. Push notifications disabled. Local notifications still work!');
+      console.error('❌ VAPID key not configured!');
+      console.error('❌ Make sure NEXT_PUBLIC_VAPID_PUBLIC_KEY is set in your environment variables');
       return null;
     }
 
@@ -63,25 +70,41 @@ export async function subscribeToPushNotifications() {
     let subscription = await registration.pushManager.getSubscription();
     if (subscription) {
       console.log('✅ Already subscribed to push notifications');
+      console.log('📍 Subscription endpoint:', subscription.endpoint.substring(0, 50) + '...');
       // Still send to server in case it was cleared
       await sendSubscriptionToServer(subscription);
       return subscription;
     }
 
     // Subscribe to push notifications
+    console.log('📱 Creating new push subscription...');
     subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(vapidKey),
     });
 
-    console.log('✅ Subscribed to push notifications');
+    console.log('✅ Push subscription created!');
+    console.log('📍 Subscription endpoint:', subscription.endpoint.substring(0, 50) + '...');
 
     // Send subscription to server
     await sendSubscriptionToServer(subscription);
 
     return subscription;
-  } catch (error) {
-    console.error('⚠️ Push notifications not available. Local notifications still work:', error);
+  } catch (error: any) {
+    console.error('❌ Error subscribing to push notifications:');
+    console.error('Error name:', error.name);
+    console.error('Error message:', error.message);
+    console.error('Full error:', error);
+
+    // Provide specific error messages
+    if (error.name === 'NotAllowedError') {
+      console.error('❌ Push permission was denied');
+    } else if (error.name === 'NotSupportedError') {
+      console.error('❌ Push notifications not supported on this device/browser');
+    } else if (error.message && error.message.includes('VAPID')) {
+      console.error('❌ Invalid VAPID key');
+    }
+
     return null;
   }
 }

@@ -131,34 +131,56 @@ export function useNotifications() {
       }
 
       console.log('📱 Step 2: Current permission:', Notification.permission)
-      
-      // If already granted, no need to request
-      if (Notification.permission === 'granted') {
-        console.log('✅ Permission already granted')
-        return
+
+      let permission = Notification.permission;
+
+      // Request permission if not already granted
+      if (permission !== 'granted') {
+        console.log('📱 Step 3: Requesting permission from browser (this should show a prompt)...')
+        permission = await Notification.requestPermission();
+        console.log('📱 Step 4: User responded with:', permission)
+        setNotificationPermission(permission);
+      } else {
+        console.log('✅ Permission already granted, setting up subscription...')
       }
-
-      // Request permission - this shows the browser prompt
-      console.log('📱 Step 3: Requesting permission from browser (this should show a prompt)...')
-      const permission = await Notification.requestPermission();
-      console.log('📱 Step 4: User responded with:', permission)
-
-      // Update state with new permission
-      setNotificationPermission(permission);
 
       if (permission === 'granted') {
         console.log('✅ Permission granted! Setting up notifications...')
+
         // Register service worker
         const swRegistration = await registerServiceWorker();
-        if (swRegistration) {
-          console.log('✅ Service worker registered')
-          // Try to subscribe to push notifications (optional, falls back to local)
-          const pushSubscription = await subscribeToPushNotifications();
-          setIsSubscribed(!!pushSubscription);
-          console.log('✅ Notifications enabled! Local notifications will work immediately.');
+        if (!swRegistration) {
+          console.error('❌ Failed to register service worker');
+          alert('Failed to register service worker. Please refresh and try again.');
+          return;
+        }
+
+        console.log('✅ Service worker registered')
+
+        // Check if already subscribed
+        const existingSubscription = await swRegistration.pushManager.getSubscription();
+        if (existingSubscription) {
+          console.log('✅ Already subscribed to push notifications');
+          setIsSubscribed(true);
+          alert('Notifications are already enabled! You can now test them.');
+          return;
+        }
+
+        // Create push subscription
+        console.log('📱 Creating push notification subscription...');
+        const pushSubscription = await subscribeToPushNotifications();
+
+        if (pushSubscription) {
+          console.log('✅ Push subscription created successfully!');
+          setIsSubscribed(true);
+          alert('Notifications enabled successfully! You can now send a test notification.');
+        } else {
+          console.error('⚠️ Failed to create push subscription');
+          alert('Failed to create push subscription. Please check:\n1. You have VAPID keys configured\n2. Your app is served over HTTPS\n3. Browser console for errors');
         }
       } else if (permission === 'default') {
         console.log('ℹ️ User dismissed the prompt (permission: default)')
+        alert('Please allow notifications to continue.');
       } else {
         console.warn('⚠️ User denied notification permission')
         alert('Notifications were blocked.\n\nTo enable them:\n1. Click the lock/info icon in the address bar\n2. Find "Notifications" and change it to "Allow"\n3. Come back and click Enable again');
