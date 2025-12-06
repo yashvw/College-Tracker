@@ -3,7 +3,8 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { X, Trash2, Download, Upload, Settings2, Bell, BellOff } from "lucide-react"
+import { X, Trash2, Download, Upload, Settings2, Bell, BellOff, Send, CheckCircle, AlertCircle } from "lucide-react"
+import { toast } from "sonner"
 
 interface Subject {
   id: string
@@ -96,12 +97,64 @@ export default function TagManagementModal({
   const [isExporting, setIsExporting] = useState(false)
   const [isImporting, setIsImporting] = useState(false)
   const [isEnablingNotifications, setIsEnablingNotifications] = useState(false)
+  const [isSendingTest, setIsSendingTest] = useState(false)
+  const [isPWA, setIsPWA] = useState(false)
   const [localPermission, setLocalPermission] = useState<NotificationPermission | undefined>(notificationPermission)
 
   // Update local permission when prop changes
   useEffect(() => {
     setLocalPermission(notificationPermission)
   }, [notificationPermission])
+
+  // Check if app is installed as PWA
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const isInstalled = window.matchMedia('(display-mode: standalone)').matches ||
+                         (window.navigator as any).standalone === true;
+      setIsPWA(isInstalled);
+    }
+  }, [])
+
+  const sendTestNotification = async () => {
+    setIsSendingTest(true);
+
+    try {
+      // Get current subscription
+      const registration = await navigator.serviceWorker.ready;
+      const subscription = await registration.pushManager.getSubscription();
+
+      if (!subscription) {
+        toast.error('No subscription found. Please enable notifications first.');
+        setIsSendingTest(false);
+        return;
+      }
+
+      // Send test notification
+      const response = await fetch('/api/notifications/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscription }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success('Test notification sent! Check your device notification panel.', {
+          description: isPWA
+            ? 'If you don\'t see it, check system notification settings.'
+            : 'For best results, install the app as PWA from your browser menu.',
+          duration: 5000,
+        });
+      } else {
+        toast.error(data.error || 'Failed to send test notification');
+      }
+    } catch (error) {
+      console.error('Test notification error:', error);
+      toast.error('Failed to send test notification. Check console for details.');
+    } finally {
+      setIsSendingTest(false);
+    }
+  };
 
   const handleExport = async () => {
     setIsExporting(true)
@@ -463,58 +516,99 @@ export default function TagManagementModal({
           <>
             <div className="mb-8">
               <h3 className="text-lg font-semibold mb-4 text-gray-300">Notifications</h3>
-              <div className="flex items-center justify-between bg-gray-800 p-4 rounded-lg">
-                <div className="flex items-center gap-3">
-                  {localPermission === 'granted' ? (
-                    <Bell className="w-5 h-5 text-blue-500" />
-                  ) : (
-                    <BellOff className="w-5 h-5 text-gray-500" />
-                  )}
-                  <div>
-                    <p className="text-gray-300 font-medium">Device Notifications</p>
-                    <p className="text-gray-500 text-sm">
-                      {localPermission === 'granted'
-                        ? 'Notifications enabled'
-                        : 'Enable notifications for reminders and updates'}
-                    </p>
+              <div className="bg-gray-800 p-4 rounded-lg space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    {localPermission === 'granted' ? (
+                      <Bell className="w-5 h-5 text-blue-500" />
+                    ) : (
+                      <BellOff className="w-5 h-5 text-gray-500" />
+                    )}
+                    <div>
+                      <p className="text-gray-300 font-medium">Device Notifications</p>
+                      <p className="text-gray-500 text-sm">
+                        {localPermission === 'granted'
+                          ? 'Notifications enabled'
+                          : 'Enable notifications for reminders and updates'}
+                      </p>
+                    </div>
                   </div>
-                </div>
-                <button
-                  onClick={async () => {
-                    setIsEnablingNotifications(true)
-                    try {
-                      if (!onEnableNotifications) {
-                        console.error('onEnableNotifications callback not provided')
-                        alert('Unable to enable notifications. Please refresh the page and try again.')
-                        setIsEnablingNotifications(false)
-                        return
-                      }
-                      console.log('🔔 Button clicked - calling onEnableNotifications immediately')
-                      // Call the function directly without any delays
-                      await onEnableNotifications()
-                      console.log('🔔 Permission request completed')
-                    } catch (error) {
-                      console.error('Error enabling notifications:', error)
-                      alert('Failed to enable notifications: ' + String(error))
-                    } finally {
-                      setIsEnablingNotifications(false)
-                      // Force update the UI by re-checking permission
-                      setTimeout(() => {
-                        if ('Notification' in window) {
-                          setLocalPermission(Notification.permission)
+                  <button
+                    onClick={async () => {
+                      setIsEnablingNotifications(true)
+                      try {
+                        if (!onEnableNotifications) {
+                          console.error('onEnableNotifications callback not provided')
+                          toast.error('Unable to enable notifications. Please refresh the page and try again.')
+                          setIsEnablingNotifications(false)
+                          return
                         }
-                      }, 500)
-                    }
-                  }}
-                  disabled={localPermission === 'granted' || isEnablingNotifications}
-                  className={`px-4 py-2 rounded-lg transition font-medium ${
-                    localPermission === 'granted'
-                      ? 'bg-green-600 text-white cursor-default'
-                      : 'bg-blue-600 hover:bg-blue-700 text-white'
-                  } disabled:opacity-75`}
-                >
-                  {isEnablingNotifications ? 'Enabling...' : localPermission === 'granted' ? 'Enabled' : 'Enable'}
-                </button>
+                        console.log('🔔 Button clicked - calling onEnableNotifications immediately')
+                        // Call the function directly without any delays
+                        await onEnableNotifications()
+                        console.log('🔔 Permission request completed')
+                        toast.success('Notifications enabled! Tap "Send Test" to verify.')
+                      } catch (error) {
+                        console.error('Error enabling notifications:', error)
+                        toast.error('Failed to enable notifications: ' + String(error))
+                      } finally {
+                        setIsEnablingNotifications(false)
+                        // Force update the UI by re-checking permission
+                        setTimeout(() => {
+                          if ('Notification' in window) {
+                            setLocalPermission(Notification.permission)
+                          }
+                        }, 500)
+                      }
+                    }}
+                    disabled={localPermission === 'granted' || isEnablingNotifications}
+                    className={`px-4 py-2 rounded-lg transition font-medium ${
+                      localPermission === 'granted'
+                        ? 'bg-green-600 text-white cursor-default'
+                        : 'bg-blue-600 hover:bg-blue-700 text-white'
+                    } disabled:opacity-75`}
+                  >
+                    {isEnablingNotifications ? 'Enabling...' : localPermission === 'granted' ? 'Enabled' : 'Enable'}
+                  </button>
+                </div>
+
+                {/* Test button - only shows when notifications are enabled */}
+                {localPermission === 'granted' && (
+                  <div className="pt-3 border-t border-gray-700">
+                    <button
+                      onClick={sendTestNotification}
+                      disabled={isSendingTest}
+                      className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition font-medium flex items-center justify-center gap-2 disabled:opacity-75 disabled:cursor-not-allowed"
+                    >
+                      {isSendingTest ? (
+                        <>
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                          <span>Sending Test...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Send className="w-4 h-4" />
+                          <span>Send Test Notification</span>
+                        </>
+                      )}
+                    </button>
+
+                    {/* PWA status indicator */}
+                    <div className="mt-2 flex items-center gap-2 text-xs">
+                      {isPWA ? (
+                        <div className="flex items-center gap-1 text-green-400">
+                          <CheckCircle className="h-3 w-3" />
+                          <span>PWA Installed - Full notification support</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1 text-yellow-400">
+                          <AlertCircle className="h-3 w-3" />
+                          <span>Install as PWA for best results</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
