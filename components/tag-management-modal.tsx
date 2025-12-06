@@ -100,6 +100,14 @@ export default function TagManagementModal({
   const [isSendingTest, setIsSendingTest] = useState(false)
   const [isPWA, setIsPWA] = useState(false)
   const [localPermission, setLocalPermission] = useState<NotificationPermission | undefined>(notificationPermission)
+  const [isScheduling, setIsScheduling] = useState(false)
+  const [scheduledNotifications, setScheduledNotifications] = useState<Array<{
+    id: string;
+    scheduledTime: string;
+    delayMinutes: number;
+    countdown: number;
+  }>>([])
+  const [selectedDelay, setSelectedDelay] = useState<number>(1)
 
   // Update local permission when prop changes
   useEffect(() => {
@@ -114,6 +122,27 @@ export default function TagManagementModal({
       setIsPWA(isInstalled);
     }
   }, [])
+
+  // Countdown timer for scheduled notifications
+  useEffect(() => {
+    if (scheduledNotifications.length === 0) return;
+
+    const interval = setInterval(() => {
+      setScheduledNotifications(prev => {
+        const updated = prev.map(notification => {
+          const scheduledTime = new Date(notification.scheduledTime).getTime();
+          const now = Date.now();
+          const countdown = Math.max(0, Math.floor((scheduledTime - now) / 1000));
+
+          return { ...notification, countdown };
+        }).filter(n => n.countdown > 0); // Remove expired ones
+
+        return updated;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [scheduledNotifications.length])
 
   const sendTestNotification = async () => {
     setIsSendingTest(true);
@@ -154,6 +183,81 @@ export default function TagManagementModal({
     } finally {
       setIsSendingTest(false);
     }
+  };
+
+  const scheduleNotification = async () => {
+    setIsScheduling(true);
+
+    try {
+      // Get current subscription
+      const registration = await navigator.serviceWorker.ready;
+      const subscription = await registration.pushManager.getSubscription();
+
+      if (!subscription) {
+        toast.error('No subscription found. Please enable notifications first.');
+        setIsScheduling(false);
+        return;
+      }
+
+      // Schedule notification
+      const response = await fetch('/api/notifications/schedule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subscription,
+          delayMinutes: selectedDelay,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success(`Notification scheduled for ${selectedDelay} minute(s) from now!`, {
+          description: 'You will receive a notification even if the app is closed.',
+          duration: 4000,
+        });
+
+        // Add to scheduled list
+        setScheduledNotifications(prev => [...prev, {
+          id: data.scheduleId,
+          scheduledTime: data.scheduledTime,
+          delayMinutes: data.delayMinutes,
+          countdown: data.delayMinutes * 60,
+        }]);
+      } else {
+        toast.error(data.error || 'Failed to schedule notification');
+      }
+    } catch (error) {
+      console.error('Schedule notification error:', error);
+      toast.error('Failed to schedule notification. Check console for details.');
+    } finally {
+      setIsScheduling(false);
+    }
+  };
+
+  const cancelScheduledNotification = async (scheduleId: string) => {
+    try {
+      const response = await fetch('/api/notifications/schedule', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scheduleId }),
+      });
+
+      if (response.ok) {
+        toast.success('Scheduled notification cancelled');
+        setScheduledNotifications(prev => prev.filter(n => n.id !== scheduleId));
+      } else {
+        toast.error('Failed to cancel notification');
+      }
+    } catch (error) {
+      toast.error('Error cancelling notification');
+    }
+  };
+
+  const formatCountdown = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   const handleExport = async () => {
@@ -607,6 +711,67 @@ export default function TagManagementModal({
                         </div>
                       )}
                     </div>
+                  </div>
+                )}
+
+                {/* Scheduled Notifications Test */}
+                {localPermission === 'granted' && (
+                  <div className="pt-3 border-t border-gray-700">
+                    <p className="text-sm text-gray-400 mb-3">Schedule Auto-Notification (Test)</p>
+
+                    {/* Delay selector and schedule button */}
+                    <div className="flex gap-2 mb-3">
+                      <select
+                        value={selectedDelay}
+                        onChange={(e) => setSelectedDelay(Number(e.target.value))}
+                        className="flex-1 px-3 py-2 bg-gray-700 text-white rounded-lg border border-gray-600 focus:outline-none focus:border-purple-500"
+                      >
+                        <option value={1}>1 minute</option>
+                        <option value={2}>2 minutes</option>
+                        <option value={3}>3 minutes</option>
+                        <option value={5}>5 minutes</option>
+                        <option value={10}>10 minutes</option>
+                        <option value={15}>15 minutes</option>
+                        <option value={30}>30 minutes</option>
+                      </select>
+
+                      <button
+                        onClick={scheduleNotification}
+                        disabled={isScheduling}
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition font-medium disabled:opacity-75 disabled:cursor-not-allowed whitespace-nowrap"
+                      >
+                        {isScheduling ? 'Scheduling...' : 'Schedule'}
+                      </button>
+                    </div>
+
+                    {/* Active scheduled notifications */}
+                    {scheduledNotifications.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-xs text-gray-500 mb-2">Active Schedules:</p>
+                        {scheduledNotifications.map((notification) => (
+                          <div
+                            key={notification.id}
+                            className="flex items-center justify-between bg-gray-700 px-3 py-2 rounded-lg"
+                          >
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 bg-blue-500 rounded-full animate-pulse"></div>
+                              <span className="text-sm text-gray-300">
+                                Sending in {formatCountdown(notification.countdown)}
+                              </span>
+                            </div>
+                            <button
+                              onClick={() => cancelScheduledNotification(notification.id)}
+                              className="text-xs text-red-400 hover:text-red-300 transition"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ))}
+                        <p className="text-xs text-gray-500 mt-2">
+                          💡 Close the app to test background notifications
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
