@@ -1,6 +1,7 @@
 import type React from "react"
 import type { Metadata } from "next"
 import { Epilogue } from "next/font/google"
+import { Toaster } from "sonner"
 import "./globals.css"
 
 const epilogue = Epilogue({ subsets: ["latin"] })
@@ -44,6 +45,7 @@ export default function RootLayout({
       </head>
       <body style={{ fontFamily: epilogue.style.fontFamily }} className="antialiased" suppressHydrationWarning>
         {children}
+        <Toaster position="top-center" richColors />
       </body>
     </html>
   )
