@@ -24,6 +24,15 @@ export default function NotificationDebugPage() {
     // 2. Check permission
     results.notificationPermission = Notification.permission;
 
+    // 8. Check QStash configuration
+    try {
+      const qstashDebug = await fetch('/api/debug/qstash');
+      const qstashData = await qstashDebug.json();
+      results.qstash = qstashData;
+    } catch (error: any) {
+      results.qstashError = error.message;
+    }
+
     // 3. Check VAPID key
     results.vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
     results.vapidKeyConfigured = !!results.vapidKey;
@@ -197,6 +206,58 @@ export default function NotificationDebugPage() {
             </div>
           )}
         </div>
+
+        {/* QStash Configuration */}
+        {status.qstash && (
+          <div className="bg-gray-900 rounded-lg p-6 space-y-4 mt-6">
+            <h2 className="text-lg font-semibold mb-4">QStash Configuration</h2>
+            <StatusRow
+              label="QStash Token"
+              value={status.qstash.qstash.tokenConfigured ? '✅ Configured' : '❌ Missing'}
+              good={status.qstash.qstash.tokenConfigured}
+            />
+            {status.qstash.qstash.tokenConfigured && (
+              <div className="text-xs text-gray-500 font-mono break-all">
+                {status.qstash.qstash.tokenPreview}
+              </div>
+            )}
+            <StatusRow
+              label="Signing Keys"
+              value={status.qstash.qstash.currentSigningKeyConfigured && status.qstash.qstash.nextSigningKeyConfigured ? '✅ Configured' : '⚠️ Missing (optional)'}
+              good={status.qstash.qstash.currentSigningKeyConfigured}
+            />
+
+            <div className="pt-4 border-t border-gray-700">
+              <p className="text-sm text-gray-400 mb-2">Webhook URLs:</p>
+              <div className="space-y-2 text-xs font-mono bg-black p-3 rounded break-all">
+                <div>
+                  <span className="text-gray-500">Base:</span>
+                  <span className="text-green-400 ml-2">{status.qstash.urls.baseUrl}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500">Webhook:</span>
+                  <span className="text-green-400 ml-2">{status.qstash.urls.webhookUrl}</span>
+                </div>
+              </div>
+            </div>
+
+            {!status.qstash.qstash.tokenConfigured && (
+              <div className="bg-red-900/30 border border-red-600 rounded-lg p-4 text-red-200 mt-4">
+                <p className="font-semibold mb-2">❌ QStash Not Configured!</p>
+                <p className="text-sm mb-2">
+                  Scheduled notifications require QStash. Follow these steps:
+                </p>
+                <ol className="text-sm space-y-1 list-decimal list-inside">
+                  <li>Go to https://console.upstash.com</li>
+                  <li>Sign up (free, no credit card)</li>
+                  <li>Click "QStash" → Copy QSTASH_TOKEN</li>
+                  <li>Add to Vercel environment variables</li>
+                  <li>Redeploy your app</li>
+                </ol>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="mt-6 text-center text-sm text-gray-500">
           <p>Debug page • Check console for detailed logs</p>

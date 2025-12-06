@@ -51,13 +51,14 @@ export async function POST(request: NextRequest) {
     console.log(`⏰ Will send at: ${scheduledTime.toISOString()}`);
 
     // Get the webhook URL (where QStash will send the request)
-    const protocol = process.env.VERCEL_URL ? 'https' : 'http';
-    const baseUrl = process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : `http://localhost:3000`;
+    // Use the request origin or Vercel URL
+    const requestUrl = new URL(request.url);
+    const baseUrl = `${requestUrl.protocol}//${requestUrl.host}`;
     const webhookUrl = `${baseUrl}/api/notifications/qstash-webhook`;
 
+    console.log(`📍 Base URL: ${baseUrl}`);
     console.log(`📍 Webhook URL: ${webhookUrl}`);
+    console.log(`📍 Request origin: ${requestUrl.origin}`);
 
     // Schedule the notification with QStash
     const response = await qstash.publishJSON({
