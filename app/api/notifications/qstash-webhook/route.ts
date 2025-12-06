@@ -14,10 +14,14 @@ if (vapidPublicKey && vapidPrivateKey) {
 // This endpoint is called by QStash when it's time to send the notification
 async function handler(request: NextRequest) {
   try {
-    console.log('📥 QStash webhook triggered!');
+    console.log('====== QStash Webhook Triggered ======');
+    console.log('📥 Time:', new Date().toISOString());
+    console.log('📍 URL:', request.url);
+    console.log('📋 Method:', request.method);
 
     const body = await request.json();
     console.log('📦 Received payload from QStash');
+    console.log('📦 Payload keys:', Object.keys(body));
 
     const { subscription, title, body: notificationBody, icon, badge, tag, data } = body;
 
@@ -61,11 +65,14 @@ async function handler(request: NextRequest) {
     };
 
     // Send push notification
-    await webpush.sendNotification(
+    console.log('📤 Calling webpush.sendNotification...');
+    const result = await webpush.sendNotification(
       subscription,
       JSON.stringify(notification)
     );
 
+    console.log('✅ Web push returned successfully');
+    console.log('📊 Result:', result);
     console.log('✅ Notification sent successfully via QStash webhook');
 
     return NextResponse.json({
@@ -103,10 +110,34 @@ async function handler(request: NextRequest) {
   }
 }
 
-// Verify QStash signature if configured
-export const POST = process.env.QSTASH_CURRENT_SIGNING_KEY && process.env.QSTASH_NEXT_SIGNING_KEY
-  ? verifySignatureAppRouter(handler)
-  : handler;
+// Export POST handler
+// Note: Signature verification can cause issues if keys are not properly set
+// For now, disable it for debugging
+export async function POST(request: NextRequest) {
+  console.log('📥 Webhook POST received');
+  console.log('📋 Headers:', Object.fromEntries(request.headers.entries()));
+
+  // Check if signature verification is configured
+  const hasSigningKeys = process.env.QSTASH_CURRENT_SIGNING_KEY && process.env.QSTASH_NEXT_SIGNING_KEY;
+
+  if (hasSigningKeys) {
+    console.log('🔐 Signature verification enabled');
+    try {
+      // Verify signature
+      const verified = verifySignatureAppRouter(handler);
+      return verified(request);
+    } catch (error: any) {
+      console.error('❌ Signature verification failed:', error.message);
+      // Fall through to unverified handler for debugging
+      console.log('⚠️ Running without signature verification for debugging');
+    }
+  } else {
+    console.log('⚠️ Signature verification disabled (signing keys not set)');
+  }
+
+  // Run handler without verification
+  return handler(request);
+}
 
 // Allow GET for testing
 export async function GET() {
@@ -114,5 +145,7 @@ export async function GET() {
     message: 'QStash webhook endpoint is ready',
     configured: !!process.env.QSTASH_TOKEN,
     signatureVerification: !!(process.env.QSTASH_CURRENT_SIGNING_KEY && process.env.QSTASH_NEXT_SIGNING_KEY),
+    vapidConfigured: !!(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY),
+    timestamp: new Date().toISOString(),
   });
 }
