@@ -4,6 +4,7 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import { useNotifications } from "@/hooks/use-notifications"
+import { useAutoNotifications } from "@/hooks/use-auto-notifications"
 import AttendanceCard from "@/components/attendance-card"
 import BottomNav from "@/components/bottom-nav"
 import AddSubjectModal from "@/components/add-subject-modal"
@@ -81,6 +82,14 @@ export default function Home() {
   const [isScheduleOpen, setIsScheduleOpen] = useState(false)
 
   const { notificationSupported, notificationPermission, enableNotifications } = useNotifications()
+
+  // Auto-sync notification schedules for class reminders, tasks, and habits
+  useAutoNotifications({
+    subjects,
+    tasks,
+    habits,
+    notificationPermission,
+  })
 
   useEffect(() => {
     const updateDate = () => {

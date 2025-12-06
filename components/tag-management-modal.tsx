@@ -5,6 +5,7 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { X, Trash2, Download, Upload, Settings2, Bell, BellOff, Send, CheckCircle, AlertCircle } from "lucide-react"
 import { toast } from "sonner"
+import { NotificationStatus } from "./notification-status"
 
 interface Subject {
   id: string
@@ -767,6 +768,15 @@ export default function TagManagementModal({
                 )}
               </div>
             </div>
+
+            <div className="h-px bg-gray-700 mb-8"></div>
+
+            {/* Active Notification Schedules Status */}
+            {localPermission === 'granted' && (
+              <div className="mb-8">
+                <NotificationStatus />
+              </div>
+            )}
 
             <div className="h-px bg-gray-700 mb-8"></div>
           </>
