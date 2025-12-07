@@ -30,14 +30,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Prepare test notification payload
+    // Prepare test notification payload with lock screen support
     const notification = {
       title: '🎉 Test Notification!',
       body: 'Your push notifications are working perfectly! You will receive class reminders, task deadlines, and habit reminders even when the app is closed.',
       icon: '/favicon-192.png',
       badge: '/favicon-192.png',
       tag: 'test-notification',
-      requireInteraction: false,
+      requireInteraction: true,
+      silent: false,
+      vibrate: [200, 100, 200],
       data: {
         url: '/',
         timestamp: Date.now(),

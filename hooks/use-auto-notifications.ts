@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 interface Subject {
   id: string;
@@ -35,6 +35,33 @@ export function useAutoNotifications({
   habits,
   notificationPermission,
 }: UseAutoNotificationsProps) {
+  // Watch for notification schedule changes in localStorage
+  const [notificationScheduleVersion, setNotificationScheduleVersion] = useState(0);
+
+  useEffect(() => {
+    // Listen for storage changes
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'notificationSchedule') {
+        setNotificationScheduleVersion(prev => prev + 1);
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    // Also poll every 3 seconds to catch same-tab changes
+    const interval = setInterval(() => {
+      const current = localStorage.getItem('notificationSchedule');
+      if (current) {
+        setNotificationScheduleVersion(prev => prev + 1);
+      }
+    }, 3000);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, []);
+
   // Sync schedules whenever they change
   useEffect(() => {
     if (notificationPermission !== 'granted') return;
@@ -127,5 +154,5 @@ export function useAutoNotifications({
     }, 2000);
 
     return () => clearTimeout(timeout);
-  }, [subjects, tasks, habits, notificationPermission]);
+  }, [subjects, tasks, habits, notificationPermission, notificationScheduleVersion]);
 }

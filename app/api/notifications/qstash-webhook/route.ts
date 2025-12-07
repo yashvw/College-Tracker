@@ -53,14 +53,16 @@ async function handler(request: NextRequest) {
 
     console.log(`📤 Sending notification: "${title}"`);
 
-    // Prepare notification payload
+    // Prepare notification payload with lock screen support
     const notification = {
       title,
       body: notificationBody,
       icon: icon || '/favicon-192.png',
       badge: badge || '/favicon-192.png',
       tag: tag || 'qstash-notification',
-      requireInteraction: false,
+      requireInteraction: true,
+      silent: false,
+      vibrate: [200, 100, 200],
       data: data || {},
     };
 

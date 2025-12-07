@@ -40,7 +40,7 @@ async function handler(request: NextRequest) {
 
     console.log(`📤 Sending class reminder: "${title}"`);
 
-    // Send push notification
+    // Send push notification with high priority for lock screen
     const notification = {
       title,
       body: notificationBody,
@@ -48,7 +48,12 @@ async function handler(request: NextRequest) {
       badge: badge || '/favicon-192.png',
       tag: tag || 'class-reminder',
       requireInteraction: true,
-      data: data || {},
+      silent: false,
+      vibrate: [200, 100, 200],
+      data: {
+        ...data,
+        url: data?.url || '/',
+      },
     };
 
     await webpush.sendNotification(
