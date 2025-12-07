@@ -100,7 +100,7 @@ export default function NotificationSchedule({ subjects }: Props) {
 
   return (
     <div
-      className="p-0 flex flex-col items-stretch w-full max-w-none md:max-w-4xl lg:max-w-5xl mx-auto h-[60vh] md:h-[70vh] max-h-[88vh] md:max-h-none overflow-hidden md:overflow-visible"
+      className="p-0 flex flex-col items-stretch w-full max-w-none md:max-w-4xl lg:max-w-5xl mx-auto h-auto max-h-[70vh] overflow-y-auto md:overflow-visible"
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >

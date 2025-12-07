@@ -655,7 +655,7 @@ export default function Home() {
           <p className="text-muted-foreground text-xs sm:text-sm">Manage your daily tasks</p>
         </div>
 
-        <div className="flex-1 px-4 sm:px-6 pb-24">
+        <div className="flex-1 px-4 sm:px-6 pb-24 pt-6">
           <div className="max-w-2xl w-full">
             <TodoListModal
               todos={todos}
@@ -811,7 +811,7 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="flex-1 px-4 sm:px-6 pb-24 overflow-y-auto">
+        <div className="flex-1 px-4 sm:px-6 pb-24 overflow-y-auto pt-6">
           <div className="max-w-2xl w-full">
             <HabitTrackerModal
               habits={habits}
@@ -910,9 +910,9 @@ export default function Home() {
       </div>
 
       {/* Main Content - Grid Layout */}
-      <div className="flex-1 px-4 sm:px-6 pb-24 overflow-y-auto">
+      <div className="flex-1 px-4 sm:px-6 pb-24 overflow-y-auto pt-6">
         {allTags.length > 0 && (
-          <div className="mb-4 sm:mb-6 flex flex-wrap gap-2 pt-4">
+          <div className="mb-4 sm:mb-6 flex flex-wrap gap-2">
             <Badge
               variant={selectedTags.length === 0 ? "default" : "outline"}
               className="cursor-pointer px-3 py-1.5 text-xs sm:text-sm"

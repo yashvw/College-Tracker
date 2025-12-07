@@ -1,22 +1,43 @@
 "use client"
 
-import { X } from "lucide-react"
 import { useState, useEffect } from "react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Badge } from "@/components/ui/badge"
+import { Card, CardContent } from "@/components/ui/card"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 interface SubjectItem {
   id: string
   name: string
   tags?: string[]
 }
+
 export interface ScheduleEntry {
   id: string
-  day: number // 0 = Sunday .. 6 = Saturday
-  startTime: string // "HH:MM"
-  endTime: string // "HH:MM"
+  day: number
+  startTime: string // "HH:MM" in 24-hour format
+  endTime: string
   subjectName: string
   notifyOffset: number
   notifyWhen: "before" | "after"
 }
+
 interface Props {
   isOpen: boolean
   onClose: () => void
@@ -25,257 +46,231 @@ interface Props {
   initial?: Partial<ScheduleEntry>
   onSave: (entry: ScheduleEntry) => void
 }
+
 export default function DayScheduleModal({ isOpen, onClose, day, subjects, initial, onSave }: Props) {
   const [startTime, setStartTime] = useState(initial?.startTime || "08:00")
   const [endTime, setEndTime] = useState(initial?.endTime || "09:00")
-  const [startAm, setStartAm] = useState<string>(initial ? (Number(initial.startTime?.split(":" )[0]) >= 12 ? "PM" : "AM") : "")
-  const [endAm, setEndAm] = useState<string>(initial ? (Number(initial.endTime?.split(":" )[0]) >= 12 ? "PM" : "AM") : "")
   const [subjectName, setSubjectName] = useState(initial?.subjectName || "")
-  const [notifyOffset, setNotifyOffset] = useState<string>(initial?.notifyOffset != null ? String(initial?.notifyOffset) : "")
-  const [notifyWhen, setNotifyWhen] = useState<string>((initial?.notifyWhen as string) || "")
+  const [notifyOffset, setNotifyOffset] = useState<string>(
+    initial?.notifyOffset != null ? String(initial.notifyOffset) : "15"
+  )
+  const [notifyWhen, setNotifyWhen] = useState<"before" | "after">(initial?.notifyWhen || "before")
   const [selectedTag, setSelectedTag] = useState<string | null>(null)
 
   useEffect(() => {
     if (initial) {
       setStartTime(initial.startTime || "08:00")
       setEndTime(initial.endTime || "09:00")
-      // set AM/PM based on stored 24h times
-      try {
-        const sh = initial.startTime?.split(":" )?.[0]
-        const eh = initial.endTime?.split(":" )?.[0]
-        if (sh != null) setStartAm(Number(sh) >= 12 ? "PM" : "AM")
-        if (eh != null) setEndAm(Number(eh) >= 12 ? "PM" : "AM")
-      } catch (e) {
-        // ignore
-      }
       setSubjectName(initial.subjectName || "")
-      setNotifyOffset(initial.notifyOffset != null ? String(initial.notifyOffset) : "")
-      setNotifyWhen((initial.notifyWhen as string) || "")
-      // pre-select tag if subject exists in subjects list
+      setNotifyOffset(initial.notifyOffset != null ? String(initial.notifyOffset) : "15")
+      setNotifyWhen(initial.notifyWhen || "before")
+
       if (initial.subjectName) {
         const found = subjects.find((s) => s.name === initial.subjectName)
         if (found && found.tags && found.tags.length > 0) setSelectedTag(found.tags[0])
       }
     }
-  }, [initial, isOpen])
-
-  if (!isOpen) return null
+  }, [initial, isOpen, subjects])
 
   const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 
   const handleSave = () => {
-    if (!startAm || !endAm) {
-      alert("Please select AM/PM for both start and end times")
-      return
-    }
-
     if (!subjectName.trim()) {
-      alert("Please select an existing subject from the list before saving")
+      alert("Please select a subject")
       return
     }
 
     if (!notifyOffset || isNaN(Number(notifyOffset))) {
-      alert("Please enter a valid minutes value for notification")
-      return
-    }
-
-    if (!notifyWhen) {
-      alert("Please select Before or After for the notification")
+      alert("Please enter a valid notification time (minutes)")
       return
     }
 
     const entry: ScheduleEntry = {
       id: initial?.id || Date.now().toString(),
       day,
-      startTime: convertTo24(startTime, startAm),
-      endTime: convertTo24(endTime, endAm),
+      startTime, // Already in 24-hour format
+      endTime,
       subjectName: subjectName.trim(),
       notifyOffset: Number(notifyOffset),
-      notifyWhen: notifyWhen as "before" | "after",
+      notifyWhen,
     }
 
     onSave(entry)
     onClose()
   }
 
-  // build tag list: include global tags saved in localStorage (Tag management)
-  let savedTags: string[] = []
+  const savedTags: string[] = []
   if (typeof window !== "undefined") {
     try {
       const raw = localStorage.getItem("tags")
-      if (raw) savedTags = JSON.parse(raw)
+      if (raw) savedTags.push(...JSON.parse(raw))
     } catch (e) {
-      // ignore parse errors
+      // ignore
     }
   }
 
-  const allTags = Array.from(new Set([...(savedTags || []), ...subjects.flatMap((s) => s.tags || [])]))
+  const allTags = Array.from(new Set([...savedTags, ...subjects.flatMap((s) => s.tags || [])]))
 
-  const timeAmPmValid = !!startAm && !!endAm
-
-  function convertTo24(time: string, ampm: string) {
-    // time: "HH:MM" (from input). ampm: "AM" | "PM"
-    const [hhStr, mm] = time.split(":" )
-    let hh = Number(hhStr)
-    if (ampm === "AM") {
-      if (hh === 12) hh = 0
-    } else if (ampm === "PM") {
-      if (hh < 12) hh += 12
-    }
-    return `${String(hh).padStart(2, "0")}:${mm}`
-  }
+  const filteredSubjects = selectedTag
+    ? subjects.filter((s) => (s.tags || []).includes(selectedTag))
+    : []
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60 md:items-center md:justify-center" onClick={onClose}>
-      <div
-        className="bg-gray-900 rounded-none md:rounded-2xl p-0 md:p-6 w-full h-full max-w-none max-h-none mx-0 md:w-full md:h-auto md:max-w-xl md:mx-4 flex flex-col"
-        style={{ maxHeight: '100vh' }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="p-4 md:p-0 flex-1 flex flex-col justify-center">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-bold">{dayNames[day]}</h3>
-          <button onClick={onClose} className="p-2 hover:bg-gray-800 rounded-lg transition">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{dayNames[day]}</DialogTitle>
+          <DialogDescription>
+            Add a class schedule and set notification reminder
+          </DialogDescription>
+        </DialogHeader>
 
-        <div className="space-y-3 text-sm text-gray-300">
-          <div>
-            <label className="block text-xs text-gray-400 mb-1">Time slot</label>
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-2">
-                <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="bg-gray-800 border border-gray-700 rounded px-3 py-2 w-full" />
-                <select value={startAm} onChange={(e) => setStartAm(e.target.value)} className="bg-gray-800 border border-gray-700 rounded px-3 py-2 w-24">
-                  <option value="">AM/PM</option>
-                  <option value="AM">AM</option>
-                  <option value="PM">PM</option>
-                </select>
-              </div>
-              <div className="flex items-center gap-2 mt-2">
-                <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="bg-gray-800 border border-gray-700 rounded px-3 py-2 w-full" />
-                <select value={endAm} onChange={(e) => setEndAm(e.target.value)} className="bg-gray-800 border border-gray-700 rounded px-3 py-2 w-24">
-                  <option value="">AM/PM</option>
-                  <option value="AM">AM</option>
-                  <option value="PM">PM</option>
-                </select>
-              </div>
-            </div>
-
-            {!timeAmPmValid && (
-              <div className="text-xs text-yellow-300 mt-2">Select AM/PM for both start and end times to continue.</div>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-xs text-gray-400 mb-1">Subject</label>
-
-            <div className="mb-2 flex gap-2 flex-wrap">
-              {allTags.length === 0 && <span className="text-xs text-gray-500">No tags</span>}
-              {allTags.map((t) => (
-                <button
-                  key={t}
-                  onClick={() => {
-                    if (!timeAmPmValid) return
-                    setSelectedTag(selectedTag === t ? null : t)
-                    setSubjectName("")
-                  }}
-                  disabled={!timeAmPmValid}
-                  className={`text-xs px-3 py-1 rounded-full ${selectedTag === t ? "bg-green-500 text-black" : "bg-gray-800 text-gray-300"} ${!timeAmPmValid ? "opacity-60 cursor-not-allowed" : ""}`}
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
-
-            {/* Selected subject display */}
-            {subjectName ? (
-                <div className="mb-3">
-                <label className="block text-xs text-gray-400 mb-1">Selected subject</label>
-                <div className="flex items-center gap-2">
-                  <div className="px-3 py-1 bg-green-500 text-black rounded text-sm break-words">{subjectName}</div>
-                  <button
-                    onClick={() => setSubjectName("")}
-                    className="text-xs text-gray-400 hover:text-white px-2 py-1 rounded hover:bg-gray-800"
-                    aria-label="Clear selected subject"
-                  >
-                    Clear
-                  </button>
-                </div>
-              </div>
-            ) : null}
-
-            <div className="bg-gray-800 border border-gray-700 rounded px-2 py-2 max-h-40 overflow-y-auto">
-              {!selectedTag && (
-                <div className="text-xs text-gray-400 px-2 py-2">Select a tag to view subjects.</div>
-              )}
-
-              {selectedTag && subjects.filter((s) => (s.tags || []).includes(selectedTag)).length === 0 && (
-                <div className="text-xs text-gray-500 px-2 py-2">No subjects under this tag</div>
-              )}
-
-              {selectedTag && subjects
-                .filter((s) => (s.tags || []).includes(selectedTag))
-                .sort((a, b) => {
-                  const aTag = (a.tags && a.tags[0]) || ""
-                  const bTag = (b.tags && b.tags[0]) || ""
-                  if (aTag === bTag) return a.name.localeCompare(b.name)
-                  return aTag.localeCompare(bTag)
-                })
-                .map((s) => (
-                  <button
-                    key={s.id}
-                    onClick={() => setSubjectName(s.name)}
-                    className={`w-full text-left px-3 py-2 rounded text-sm flex items-center justify-between ${subjectName === s.name ? 'bg-green-500 text-black' : 'hover:bg-gray-700'}`}
-                  >
-                    <div className="break-words">{s.name}</div>
-                    <div className="text-xs text-gray-400">{(s.tags || []).join(", ")}</div>
-                  </button>
-                ))}
-            </div>
-
-            <div className="mt-2">
-              <div className="text-xs text-gray-500">Select a subject from the list above. To add new subjects, use the Subject management screen.</div>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs text-gray-400 mb-1">Notification</label>
-            <div className="flex items-center gap-2">
-              <input
-                type="number"
-                min={0}
-                value={notifyOffset}
-                onChange={(e) => setNotifyOffset(e.target.value)}
-                className="bg-gray-800 border border-gray-700 rounded px-3 py-2 w-24"
-                placeholder=""
+        <div className="space-y-6 py-4">
+          {/* Time Slots */}
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="start-time">Start Time</Label>
+              <Input
+                id="start-time"
+                type="time"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
               />
-              <span className="text-gray-400">mins</span>
-              <select value={notifyWhen} onChange={(e) => setNotifyWhen(e.target.value)} className="bg-gray-800 border border-gray-700 rounded px-3 py-2">
-                <option value="">Select</option>
-                <option value="before">Before</option>
-                <option value="after">After</option>
-              </select>
-              <span className="text-gray-400">the lecture</span>
             </div>
-            {!notifyWhen && (
-              <div className="text-xs text-yellow-300 mt-2">Open the dropdown and select "Before" or "After" to continue.</div>
+
+            <div className="space-y-2">
+              <Label htmlFor="end-time">End Time</Label>
+              <Input
+                id="end-time"
+                type="time"
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Subject Selection */}
+          <div className="space-y-3">
+            <Label>Subject</Label>
+
+            {/* Tag Filter */}
+            {allTags.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {allTags.map((tag) => (
+                  <Badge
+                    key={tag}
+                    variant={selectedTag === tag ? "default" : "outline"}
+                    className="cursor-pointer"
+                    onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
+                  >
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
+            )}
+
+            {/* Subject Display */}
+            {subjectName ? (
+              <Card>
+                <CardContent className="p-3 flex items-center justify-between">
+                  <span className="font-medium">{subjectName}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSubjectName("")}
+                  >
+                    Change
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardContent className="p-3 max-h-40 overflow-y-auto">
+                  {!selectedTag ? (
+                    <p className="text-muted-foreground text-xs text-center py-2">
+                      Select a tag to view subjects
+                    </p>
+                  ) : filteredSubjects.length === 0 ? (
+                    <p className="text-muted-foreground text-xs text-center py-2">
+                      No subjects with this tag
+                    </p>
+                  ) : (
+                    <div className="space-y-1">
+                      {filteredSubjects.map((subject) => (
+                        <Button
+                          key={subject.id}
+                          variant="ghost"
+                          className="w-full justify-start"
+                          onClick={() => setSubjectName(subject.name)}
+                        >
+                          {subject.name}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {!subjectName && allTags.length === 0 && (
+              <p className="text-xs text-muted-foreground">
+                Add subjects with tags first, or select a subject from the list above
+              </p>
             )}
           </div>
 
-          <div className="flex gap-3 pt-3">
-            <button onClick={onClose} className="flex-1 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-gray-300">Cancel</button>
-            <button
+          {/* Notification Settings */}
+          <div className="space-y-4">
+            <Label>Notification</Label>
+
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <Label htmlFor="notify-offset" className="text-xs">Minutes</Label>
+                <Input
+                  id="notify-offset"
+                  type="number"
+                  min="1"
+                  max="60"
+                  value={notifyOffset}
+                  onChange={(e) => setNotifyOffset(e.target.value)}
+                  placeholder="15"
+                />
+              </div>
+
+              <div className="flex-1">
+                <Label className="text-xs">When</Label>
+                <Select value={notifyWhen} onValueChange={(v) => setNotifyWhen(v as "before" | "after")}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="before">Before</SelectItem>
+                    <SelectItem value="after">After</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              Get notified {notifyOffset || "___"} minutes {notifyWhen} the class
+            </p>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-3 pt-4">
+            <Button variant="outline" onClick={onClose} className="flex-1">
+              Cancel
+            </Button>
+            <Button
               onClick={handleSave}
-              disabled={!(timeAmPmValid && subjectName && notifyWhen && notifyOffset && !isNaN(Number(notifyOffset)))}
-              className={`flex-1 px-4 py-2 rounded-lg text-black ${timeAmPmValid && subjectName && notifyWhen && notifyOffset && !isNaN(Number(notifyOffset)) ? 'bg-green-500 hover:bg-green-600' : 'bg-green-700 opacity-60 cursor-not-allowed'}`}
+              disabled={!subjectName.trim() || !notifyOffset}
+              className="flex-1"
             >
               Save
-            </button>
+            </Button>
           </div>
         </div>
-      </div>
-    </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }

@@ -683,41 +683,43 @@ export default function TagManagementModal({
                       </Button>
                     </div>
 
-                {/* Test button - only shows when notifications are enabled */}
+                {/* Test button and PWA status - horizontal layout */}
                 {localPermission === 'granted' && (
-                  <div className="pt-3 border-t border-border">
-                    <Button
-                      onClick={sendTestNotification}
-                      disabled={isSendingTest}
-                      variant="secondary"
-                      className="w-full gap-2"
-                    >
-                      {isSendingTest ? (
-                        <>
-                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                          <span>Sending Test...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Send className="w-4 h-4" />
-                          <span>Send Test Notification</span>
-                        </>
-                      )}
-                    </Button>
+                  <div className="pt-3 border-t border-border space-y-3">
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <Button
+                        onClick={sendTestNotification}
+                        disabled={isSendingTest}
+                        variant="secondary"
+                        className="flex-1 gap-2"
+                      >
+                        {isSendingTest ? (
+                          <>
+                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                            <span>Sending Test...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Send className="w-4 h-4" />
+                            <span>Send Test Notification</span>
+                          </>
+                        )}
+                      </Button>
 
-                    {/* PWA status indicator */}
-                    <div className="mt-2 flex items-center gap-2 text-xs">
-                      {isPWA ? (
-                        <div className="flex items-center gap-1 text-green-400">
-                          <CheckCircle className="h-3 w-3" />
-                          <span>PWA Installed - Full notification support</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-1 text-yellow-400">
-                          <AlertCircle className="h-3 w-3" />
-                          <span>Install as PWA for best results</span>
-                        </div>
-                      )}
+                      <div className="flex items-center justify-center gap-2 text-xs px-3 py-2 rounded-lg bg-accent/50">
+                        {isPWA ? (
+                          <>
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                            <span className="text-foreground">PWA Installed</span>
+                          </>
+                        ) : (
+                          <>
+                            <AlertCircle className="h-4 w-4 text-yellow-500" />
+                            <span className="text-foreground hidden sm:inline">Install as PWA</span>
+                            <span className="text-foreground sm:hidden">Not PWA</span>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}

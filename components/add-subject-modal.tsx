@@ -43,7 +43,7 @@ export default function AddSubjectModal({ isOpen, onClose, onAdd, existingTags }
   const [subjectName, setSubjectName] = useState("")
   const [attended, setAttended] = useState(0)
   const [missed, setMissed] = useState(0)
-  const [requirement, setRequirement] = useState(75)
+  const [requirement, setRequirement] = useState(0)
   const [glowColor, setGlowColor] = useState("#22c55e")
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [newTag, setNewTag] = useState("")
@@ -66,7 +66,7 @@ export default function AddSubjectModal({ isOpen, onClose, onAdd, existingTags }
     setSubjectName("")
     setAttended(0)
     setMissed(0)
-    setRequirement(75)
+    setRequirement(0)
     setGlowColor("#22c55e")
     setSelectedTags([])
     setNewTag("")
@@ -180,12 +180,12 @@ export default function AddSubjectModal({ isOpen, onClose, onAdd, existingTags }
                   <div className="flex items-center gap-1">
                     <Input
                       type="number"
-                      min={1}
+                      min={0}
                       max={100}
                       value={requirement}
                       onChange={(e) => {
                         const v = Number(e.target.value)
-                        if (!isNaN(v)) setRequirement(Math.min(100, Math.max(1, v)))
+                        if (!isNaN(v)) setRequirement(Math.min(100, Math.max(0, v)))
                       }}
                       className="w-14 text-center text-lg font-bold h-8 px-1"
                     />
@@ -194,7 +194,7 @@ export default function AddSubjectModal({ isOpen, onClose, onAdd, existingTags }
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => setRequirement((prev) => Math.max(1, prev - 5))}
+                    onClick={() => setRequirement((prev) => Math.max(0, prev - 5))}
                     className="h-8 w-8"
                   >
                     <ChevronDown className="h-4 w-4" />
