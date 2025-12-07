@@ -134,31 +134,30 @@ export default function TodoListModal({
           </p>
         ) : (
           todos.map((todo) => (
-            <Card
-              key={todo.id}
-              className="flex items-center gap-3 p-3 hover:bg-accent/50 transition"
-            >
-              <Checkbox
-                checked={todo.completed}
-                onCheckedChange={() => onToggleTodo(todo.id)}
-                className="h-5 w-5"
-              />
-              <span
-                className={`flex-1 ${
-                  todo.completed ? "line-through text-muted-foreground" : "text-foreground"
-                }`}
-              >
-                {todo.text}
-              </span>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => onDeleteTodo(todo.id)}
-                className="h-8 w-8"
-                title="Delete"
-              >
-                <Trash2 className="w-4 h-4 text-destructive" />
-              </Button>
+            <Card key={todo.id} className="hover:bg-accent/50 transition">
+              <div className="flex items-center gap-3 p-3">
+                <Checkbox
+                  checked={todo.completed}
+                  onCheckedChange={() => onToggleTodo(todo.id)}
+                  className="h-5 w-5 shrink-0"
+                />
+                <span
+                  className={`flex-1 text-sm ${
+                    todo.completed ? "line-through text-muted-foreground" : "text-foreground"
+                  }`}
+                >
+                  {todo.text}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => onDeleteTodo(todo.id)}
+                  className="h-8 w-8 shrink-0"
+                  title="Delete"
+                >
+                  <Trash2 className="w-4 h-4 text-destructive" />
+                </Button>
+              </div>
             </Card>
           ))
         )}
