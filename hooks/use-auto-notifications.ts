@@ -54,34 +54,67 @@ export function useAutoNotifications({
         const classSchedulesRaw = localStorage.getItem('notificationSchedule');
         const classSchedules = classSchedulesRaw ? JSON.parse(classSchedulesRaw) : [];
 
-        // Prepare task reminders
+        console.log('📅 Setting up recurring class notifications with QStash...');
+        console.log(`  - ${classSchedules.length} class schedules`);
+
+        if (classSchedules.length > 0) {
+          // Set up QStash recurring schedules for classes
+          const response = await fetch('/api/notifications/schedule-recurring', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              subscription,
+              classSchedules,
+            }),
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            console.log(`✅ Created ${data.created} QStash recurring schedules for classes`);
+
+            // Store QStash schedule IDs for later management
+            const scheduleIds = data.results
+              .filter((r: any) => r.success)
+              .map((r: any) => r.qstashScheduleId);
+
+            if (scheduleIds.length > 0) {
+              localStorage.setItem('qstashScheduleIds', JSON.stringify(scheduleIds));
+            }
+          } else {
+            const errorData = await response.json();
+            console.error('❌ Failed to create QStash schedules:', errorData.error);
+          }
+        }
+
+        // Task reminders with QStash one-time schedules
         const taskReminders = tasks.filter(t => (t.remindDaysBefore || 0) > 0);
 
-        // Prepare habit reminders (for now, we'll add UI to set reminder times later)
-        const habitReminders: any[] = []; // Will be populated when we add reminder time UI
+        if (taskReminders.length > 0) {
+          console.log(`📝 Scheduling ${taskReminders.length} task reminders...`);
 
-        console.log('📅 Syncing notification schedules...');
-        console.log(`  - ${classSchedules.length} class schedules`);
-        console.log(`  - ${taskReminders.length} task reminders`);
-        console.log(`  - ${habitReminders.length} habit reminders`);
+          for (const task of taskReminders) {
+            const dueDate = new Date(task.dueDate);
+            const reminderDate = new Date(dueDate);
+            reminderDate.setDate(reminderDate.getDate() - (task.remindDaysBefore || 0));
+            reminderDate.setHours(9, 0, 0, 0);
 
-        // Sync with server
-        const response = await fetch('/api/notifications/sync-schedules', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            subscription,
-            classSchedules,
-            taskReminders,
-            habitReminders,
-          }),
-        });
+            if (reminderDate > new Date()) {
+              const delayMinutes = Math.floor((reminderDate.getTime() - Date.now()) / (60 * 1000));
 
-        if (response.ok) {
-          const data = await response.json();
-          console.log(`✅ Synced ${data.synced} notification schedules to Vercel Cron`);
-        } else {
-          console.error('❌ Failed to sync notification schedules');
+              if (delayMinutes > 0) {
+                await fetch('/api/notifications/schedule-qstash', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    subscription,
+                    delayMinutes,
+                  }),
+                });
+              }
+            }
+          }
+
+          console.log(`✅ Task reminders scheduled`);
         }
       } catch (error) {
         console.error('❌ Error syncing notification schedules:', error);
