@@ -3,7 +3,17 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { ChevronRight, ChevronLeft, X } from "lucide-react"
+import { ChevronRight, ChevronLeft } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import { Progress } from "@/components/ui/progress"
 
 interface TutorialModalProps {
   isOpen: boolean
@@ -85,14 +95,6 @@ export default function TutorialModal({ isOpen, onClose }: TutorialModalProps) {
     },
   ]
 
-  if (!isOpen) return null
-
-  const handleBackdropClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      onClose()
-    }
-  }
-
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1)
@@ -108,79 +110,52 @@ export default function TutorialModal({ isOpen, onClose }: TutorialModalProps) {
   }
 
   const step = steps[currentStep]
-  const isNewFeatureSlide = step.isNewFeature
+  const isNewFeature = step.isNewFeature
+  const progress = ((currentStep + 1) / steps.length) * 100
 
   return (
-    <div
-      className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50"
-      onClick={handleBackdropClick}
-    >
-      <div
-        className={`rounded-lg p-8 max-w-md w-full mx-4 cursor-default relative ${
-          isNewFeatureSlide
-            ? "bg-gradient-to-br from-amber-700 via-amber-600 to-amber-800 shadow-lg shadow-amber-500/50"
-            : "bg-gray-900"
-        }`}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 p-1 hover:bg-gray-800 rounded transition z-10"
-          title="Close tutorial"
-        >
-          <X className="w-5 h-5 text-gray-400" />
-        </button>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <div className="text-5xl mb-2">{step.icon}</div>
+          <DialogTitle className="text-2xl">
+            {step.title}
+          </DialogTitle>
+          <DialogDescription className="text-base leading-relaxed pt-2">
+            {step.description}
+          </DialogDescription>
+        </DialogHeader>
 
-        {/* Icon */}
-        <div className="text-5xl mb-4">{step.icon}</div>
+        <div className="space-y-6 pt-4">
+          {/* Progress Bar */}
+          <div className="space-y-2">
+            <Progress value={progress} className="h-2" />
+            <p className="text-xs text-center text-muted-foreground">
+              Step {currentStep + 1} of {steps.length}
+            </p>
+          </div>
 
-        {/* Title */}
-        <h2 className={`text-2xl font-bold mb-3 ${isNewFeatureSlide ? "text-amber-50" : "text-white"}`}>
-          {step.title}
-        </h2>
-
-        {/* Description */}
-        <p className={`mb-6 leading-relaxed ${isNewFeatureSlide ? "text-amber-100" : "text-gray-400"}`}>
-          {step.description}
-        </p>
-
-        {/* Progress Indicator */}
-        <div className="flex gap-1 mb-6">
-          {steps.map((_, index) => (
-            <div
-              key={index}
-              className={`h-1 flex-1 rounded-full transition ${
-                index === currentStep ? "bg-green-500" : index < currentStep ? "bg-green-500" : "bg-gray-700"
-              }`}
-            />
-          ))}
+          {/* Navigation */}
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              onClick={handlePrev}
+              disabled={currentStep === 0}
+              className="flex-1"
+            >
+              <ChevronLeft className="w-4 h-4 mr-2" />
+              Back
+            </Button>
+            <Button
+              onClick={handleNext}
+              className="flex-1"
+            >
+              {currentStep === steps.length - 1 ? "Done" : "Next"}
+              {currentStep !== steps.length - 1 && <ChevronRight className="w-4 h-4 ml-2" />}
+            </Button>
+          </div>
         </div>
-
-        {/* Navigation */}
-        <div className="flex gap-3">
-          <button
-            onClick={handlePrev}
-            disabled={currentStep === 0}
-            className="flex-1 px-4 py-2 bg-gray-800 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition flex items-center justify-center gap-2"
-          >
-            <ChevronLeft className="w-4 h-4" />
-            Back
-          </button>
-          <button
-            onClick={handleNext}
-            className="flex-1 px-4 py-2 bg-green-500 hover:bg-green-600 text-black font-medium rounded-lg transition flex items-center justify-center gap-2"
-          >
-            {currentStep === steps.length - 1 ? "Done" : "Next"}
-            {currentStep !== steps.length - 1 && <ChevronRight className="w-4 h-4" />}
-          </button>
-        </div>
-
-        {/* Step Counter */}
-        <p className={`text-center text-sm mt-4 ${isNewFeatureSlide ? "text-amber-200" : "text-gray-500"}`}>
-          Step {currentStep + 1} of {steps.length}
-        </p>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }

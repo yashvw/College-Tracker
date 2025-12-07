@@ -24,6 +24,13 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 interface Subject {
   id: string
@@ -1030,26 +1037,17 @@ export default function Home() {
         notificationPermission={notificationPermission || undefined}
         onEnableNotifications={enableNotifications}
       />
-      {isScheduleOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-          onClick={() => setIsScheduleOpen(false)}
-        >
-          <div
-            className="bg-gray-900 rounded-2xl p-8 w-full max-w-6xl mx-4 max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold">Notification Schedule</h2>
-              <button onClick={() => setIsScheduleOpen(false)} className="p-2 hover:bg-gray-800 rounded-lg transition">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <NotificationSchedule subjects={subjects.map(s => ({ id: s.id, name: s.name, tags: s.tags }))} />
-          </div>
-        </div>
-      )}
+      <Dialog open={isScheduleOpen} onOpenChange={setIsScheduleOpen}>
+        <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Notification Schedule</DialogTitle>
+            <DialogDescription>
+              Set up automatic class reminders for your weekly schedule
+            </DialogDescription>
+          </DialogHeader>
+          <NotificationSchedule subjects={subjects.map(s => ({ id: s.id, name: s.name, tags: s.tags }))} />
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

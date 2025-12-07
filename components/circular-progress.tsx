@@ -14,7 +14,7 @@ export default function CircularProgress({ percentage, glowColor = "#22c55e" }: 
     <div className="flex flex-col items-center">
       <svg width="120" height="120" className="transform -rotate-90">
         {/* Background circle */}
-        <circle cx="60" cy="60" r={radius} fill="none" stroke="#1f2937" strokeWidth="6" />
+        <circle cx="60" cy="60" r={radius} fill="none" stroke="currentColor" strokeWidth="6" className="text-muted-foreground/20" />
         <defs>
           <filter id="glow">
             <feGaussianBlur stdDeviation="3" result="coloredBlur" />
@@ -40,7 +40,7 @@ export default function CircularProgress({ percentage, glowColor = "#22c55e" }: 
       </svg>
       {/* Percentage text */}
       <div className="absolute flex items-center justify-center w-32 h-32">
-        <span className="text-2xl font-bold text-white">{percentage}%</span>
+        <span className="text-2xl font-bold text-foreground">{percentage}%</span>
       </div>
     </div>
   )
