@@ -2,7 +2,20 @@
 
 import { useState, useEffect } from "react"
 import { TrashIcon, DownloadIcon } from "@/components/icons"
-import { X } from "lucide-react"
+import { X, Calendar } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Card } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Badge } from "@/components/ui/badge"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 interface Habit {
   id: string
@@ -38,7 +51,7 @@ export default function HabitTrackerModal({
   }
 
   const [selectedDate, setSelectedDate] = useState(() => getLocalDateString(new Date()))
-  
+
   const handleAddHabit = () => {
     if (newHabit.trim()) {
       if (habits.length >= 10) {
@@ -55,13 +68,13 @@ export default function HabitTrackerModal({
   const getDatesArray = () => {
     const dates = []
     const today = new Date()
-    
+
     // Get the start of the current week (Sunday)
     const startOfWeek = new Date(today)
     const day = today.getDay()
     const diff = today.getDate() - day
     startOfWeek.setDate(diff)
-    
+
     // Generate 7 days starting from Sunday
     for (let i = 0; i < 7; i++) {
       const date = new Date(startOfWeek)
@@ -172,76 +185,90 @@ export default function HabitTrackerModal({
     })
 
     return (
-      <>
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-white">Export Habits</h2>
-          <button
-            onClick={() => setShowExportModal(false)}
-            className="p-1 hover:bg-gray-800 rounded transition text-gray-400"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+      <Dialog open={showExportModal} onOpenChange={setShowExportModal}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Export Habits</DialogTitle>
+            <DialogDescription>
+              Export habit completion data as a calendar CSV
+            </DialogDescription>
+          </DialogHeader>
 
-        {/* Month Selection */}
-        <div className="mb-6">
-          <label className="block text-gray-400 text-sm mb-2">Select Month</label>
-          <input
-            type="month"
-            value={exportMonth}
-            onChange={(e) => setExportMonth(e.target.value)}
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-green-500 transition"
-          />
-          <p className="text-gray-500 text-xs mt-2">Exporting: {monthName}</p>
-          {noDataForMonth && (
-            <p className="text-yellow-400 text-xs mt-2">No data found for the selected month and selected habits.</p>
-          )}
-        </div>
+          <div className="space-y-6 py-4">
+            {/* Month Selection */}
+            <div className="space-y-2">
+              <Label htmlFor="export-month">Select Month</Label>
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="export-month"
+                  type="month"
+                  value={exportMonth}
+                  onChange={(e) => setExportMonth(e.target.value)}
+                  className="flex-1"
+                />
+              </div>
+              <p className="text-muted-foreground text-xs">Exporting: {monthName}</p>
+              {noDataForMonth && (
+                <p className="text-yellow-500 text-xs">No data found for the selected month and selected habits.</p>
+              )}
+            </div>
 
-        {/* Habit Selection */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <label className="block text-gray-400 text-sm font-medium">Select Habits</label>
-            <button
-              onClick={handleSelectAll}
-              className="text-xs text-green-500 hover:text-green-400 transition"
-            >
-              {selectedHabits.size === habits.length ? "Deselect All" : "Select All"}
-            </button>
+            {/* Habit Selection */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label>Select Habits</Label>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleSelectAll}
+                  className="text-xs h-auto p-0"
+                >
+                  {selectedHabits.size === habits.length ? "Deselect All" : "Select All"}
+                </Button>
+              </div>
+
+              <Card className="p-3 max-h-64 overflow-y-auto">
+                {habits.length === 0 ? (
+                  <p className="text-muted-foreground text-sm">No habits to export</p>
+                ) : (
+                  <div className="space-y-2">
+                    {habits.map((habit) => (
+                      <div key={habit.id} className="flex items-center gap-2">
+                        <Checkbox
+                          id={`habit-${habit.id}`}
+                          checked={selectedHabits.has(habit.id)}
+                          onCheckedChange={() => handleToggleHabit(habit.id)}
+                        />
+                        <Label
+                          htmlFor={`habit-${habit.id}`}
+                          className="text-sm font-normal cursor-pointer flex-1"
+                        >
+                          {habit.name}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </Card>
+            </div>
+
+            {/* Export Button */}
+            <div className="flex gap-3 pt-2">
+              <Button variant="outline" onClick={() => setShowExportModal(false)} className="flex-1">
+                Cancel
+              </Button>
+              <Button
+                onClick={handleExport}
+                disabled={selectedHabits.size === 0}
+                className="flex-1"
+              >
+                Export {selectedHabits.size > 0 ? `(${selectedHabits.size})` : ""}
+              </Button>
+            </div>
           </div>
-
-          <div className="space-y-2 max-h-64 overflow-y-auto">
-            {habits.length === 0 ? (
-              <p className="text-gray-500 text-sm">No habits to export</p>
-            ) : (
-              habits.map((habit) => (
-                <label key={habit.id} className="flex items-center gap-3 p-2 rounded hover:bg-gray-800 cursor-pointer transition">
-                  <input
-                    type="checkbox"
-                    checked={selectedHabits.has(habit.id)}
-                    onChange={() => handleToggleHabit(habit.id)}
-                    className="w-4 h-4 rounded bg-gray-800 border-gray-700 accent-green-500"
-                  />
-                  <span className="text-gray-400 text-sm">{habit.name}</span>
-                </label>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* Export Button */}
-        <button
-          onClick={handleExport}
-          disabled={selectedHabits.size === 0}
-          className={`w-full py-3 rounded-lg font-medium transition ${
-            selectedHabits.size === 0
-              ? "bg-gray-700 text-gray-600 cursor-not-allowed opacity-50"
-              : "bg-green-500 hover:bg-green-600 text-black cursor-pointer"
-          }`}
-        >
-          Export {selectedHabits.size > 0 ? `(${selectedHabits.size})` : ""} as CSV
-        </button>
-      </>
+        </DialogContent>
+      </Dialog>
     )
   }
 
@@ -249,54 +276,53 @@ export default function HabitTrackerModal({
     <div className="space-y-3 sm:space-y-4 w-full">
       {/* Add Habit Section */}
       <div className="flex flex-col sm:flex-row gap-2">
-        <input
+        <Input
           type="text"
           value={newHabit}
           onChange={(e) => setNewHabit(e.target.value)}
-          onKeyPress={(e) => e.key === "Enter" && handleAddHabit()}
+          onKeyDown={(e) => e.key === "Enter" && handleAddHabit()}
           placeholder="Add a new habit..."
-          className="flex-1 px-3 sm:px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-xs sm:text-base text-white placeholder-gray-500 focus:outline-none focus:border-green-500 transition min-w-0"
+          className="flex-1"
         />
-        <button
+        <Button
           onClick={handleAddHabit}
-          className="px-4 sm:px-6 py-2 bg-green-500 hover:bg-green-600 text-black font-medium rounded-lg transition text-xs sm:text-base whitespace-nowrap"
+          disabled={!newHabit.trim()}
+          className="whitespace-nowrap"
         >
           Add
-        </button>
+        </Button>
       </div>
 
       {/* Limit Warning */}
       {showLimitWarning && (
-        <div className="p-2 sm:p-3 bg-red-900 bg-opacity-30 border border-red-500 rounded-lg text-red-300 text-xs sm:text-sm">
-          Max 10 habits. Delete some first.
-        </div>
+        <Card className="p-2 sm:p-3 bg-destructive/10 border-destructive">
+          <p className="text-destructive text-xs sm:text-sm">
+            Max 10 habits. Delete some first.
+          </p>
+        </Card>
       )}
 
       {/* Export Button */}
       <div className="flex justify-end">
-        <button
+        <Button
+          variant="outline"
+          size="sm"
           onClick={() => setShowExportModal(true)}
-          className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-2 bg-blue-900 hover:bg-blue-800 text-blue-300 text-xs sm:text-sm rounded-lg transition"
+          className="gap-1 sm:gap-2"
         >
           <DownloadIcon />
           <span className="hidden sm:inline">Export CSV</span>
           <span className="sm:hidden">Export</span>
-        </button>
+        </Button>
       </div>
 
       {/* Export Modal */}
-      {showExportModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-900 rounded-2xl p-8 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
-            <ExportModal />
-          </div>
-        </div>
-      )}
+      <ExportModal />
 
       {/* Habits List */}
       <div className="space-y-2 sm:space-y-3">
         {habits.length === 0 ? (
-          <p className="text-gray-500 text-center py-6 sm:py-8 text-xs sm:text-base">
+          <p className="text-muted-foreground text-center py-6 sm:py-8 text-xs sm:text-base">
             No habits yet. Add one to get started!
           </p>
         ) : (
@@ -304,20 +330,22 @@ export default function HabitTrackerModal({
             const stats = getCompletionStats(habit)
 
             return (
-              <div key={habit.id} className="space-y-1 sm:space-y-2">
-                {/* Habit Row */}
-                <div className="px-2 sm:px-3 py-2 sm:py-3 bg-gray-800 rounded-lg hover:bg-gray-750 transition">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="font-medium text-xs sm:text-base text-white">
+              <Card key={habit.id} className="p-2 sm:p-3">
+                <div className="space-y-2 sm:space-y-3">
+                  {/* Habit Header */}
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-xs sm:text-base text-foreground">
                       {habit.name}
                     </span>
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() => onDeleteHabit(habit.id)}
-                      className="p-1 hover:bg-red-900 hover:bg-opacity-50 rounded transition flex-shrink-0 ml-2 text-red-500"
+                      className="h-8 w-8 text-destructive hover:text-destructive"
                       title="Delete"
                     >
                       <TrashIcon />
-                    </button>
+                    </Button>
                   </div>
 
                   {/* Daily Checkboxes */}
@@ -325,34 +353,33 @@ export default function HabitTrackerModal({
                     {dates.map((date) => {
                       const isCompleted = habit.completions[date] === true
                       const displayDate = new Date(date).toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' })
-                      
+
                       return (
-                        <div key={date} className="flex flex-col items-center">
-                          <span className="text-xs text-gray-500 mb-1">{displayDate}</span>
-                          <input
-                            type="checkbox"
+                        <div key={date} className="flex flex-col items-center gap-1">
+                          <span className="text-xs text-muted-foreground">{displayDate}</span>
+                          <Checkbox
                             checked={isCompleted}
-                            onChange={() => onToggleHabit(habit.id, date)}
-                            className="w-4 h-4 sm:w-5 sm:h-5 cursor-pointer accent-green-500"
+                            onCheckedChange={() => onToggleHabit(habit.id, date)}
+                            className="h-4 w-4 sm:h-5 sm:w-5"
                           />
                         </div>
                       )
                     })}
                   </div>
-                </div>
 
-                {/* Stats */}
-                <div className="flex gap-2 sm:gap-3 text-xs text-gray-400 px-1 flex-wrap">
-                  <span className="flex items-center gap-1">
-                    <span className="text-sm text-green-500">✓</span>
-                    <span className="text-xs sm:text-sm">{stats.completed} done</span>
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <span className="text-sm text-red-500">✗</span>
-                    <span className="text-xs sm:text-sm">{stats.notCompleted} missed</span>
-                  </span>
+                  {/* Stats */}
+                  <div className="flex gap-2 sm:gap-3 text-xs flex-wrap pt-1">
+                    <Badge variant="outline" className="gap-1">
+                      <span className="text-green-500">✓</span>
+                      <span>{stats.completed} done</span>
+                    </Badge>
+                    <Badge variant="outline" className="gap-1">
+                      <span className="text-red-500">✗</span>
+                      <span>{stats.notCompleted} missed</span>
+                    </Badge>
+                  </div>
                 </div>
-              </div>
+              </Card>
             )
           })
         )}

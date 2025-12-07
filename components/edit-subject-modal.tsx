@@ -1,7 +1,20 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { ChevronUp, ChevronDown, X } from "lucide-react"
+import { ChevronUp, ChevronDown, X, Plus } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Badge } from "@/components/ui/badge"
+import { Card } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
 
 interface Subject {
   id: string
@@ -22,12 +35,12 @@ interface EditSubjectModalProps {
 }
 
 const GLOW_COLORS = [
-  { name: "Green", value: "#22c55e", hex: "#22c55e" },
-  { name: "Blue", value: "#3b82f6", hex: "#3b82f6" },
-  { name: "Purple", value: "#a855f7", hex: "#a855f7" },
-  { name: "Pink", value: "#ec4899", hex: "#ec4899" },
-  { name: "Orange", value: "#f97316", hex: "#f97316" },
-  { name: "Red", value: "#ef4444", hex: "#ef4444" },
+  { name: "Green", value: "#22c55e" },
+  { name: "Blue", value: "#3b82f6" },
+  { name: "Purple", value: "#a855f7" },
+  { name: "Pink", value: "#ec4899" },
+  { name: "Orange", value: "#f97316" },
+  { name: "Red", value: "#ef4444" },
 ]
 
 export default function EditSubjectModal({ isOpen, onClose, onSave, subject, existingTags }: EditSubjectModalProps) {
@@ -50,17 +63,19 @@ export default function EditSubjectModal({ isOpen, onClose, onSave, subject, exi
     }
   }, [subject, isOpen])
 
+  const canSave = subjectName.trim()
+
   const handleSave = () => {
-    if (subjectName.trim()) {
-      onSave(subject.id, {
-        name: subjectName,
-        attended,
-        missed,
-        requirement,
-        glowColor,
-        tags: selectedTags,
-      })
-    }
+    if (!canSave) return
+
+    onSave(subject.id, {
+      name: subjectName,
+      attended,
+      missed,
+      requirement,
+      glowColor,
+      tags: selectedTags,
+    })
   }
 
   const handleAddTag = () => {
@@ -78,188 +93,222 @@ export default function EditSubjectModal({ isOpen, onClose, onSave, subject, exi
     setSelectedTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]))
   }
 
-  if (!isOpen) return null
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-gray-900 rounded-2xl p-8 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <h2 className="text-center text-gray-400 text-sm mb-6">Edit Subject</h2>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Edit Subject</DialogTitle>
+          <DialogDescription>
+            Update attendance and settings for this subject
+          </DialogDescription>
+        </DialogHeader>
 
-        {/* Input Field */}
-        <div className="mb-8">
-          <input
-            type="text"
-            value={subjectName}
-            onChange={(e) => setSubjectName(e.target.value)}
-            placeholder="Ex. Biology"
-            className="w-full bg-transparent text-center text-4xl font-bold text-gray-400 placeholder-gray-600 border-b border-gray-700 pb-4 focus:outline-none focus:border-green-500 transition"
-          />
-        </div>
-
-        {/* Stats Controls */}
-        <div className="grid grid-cols-3 gap-6 mb-8">
-          {/* Attended */}
-          <div className="flex flex-col items-center">
-            <button
-              onClick={() => setAttended(attended + 1)}
-              className="p-3 rounded-full bg-gray-800 hover:bg-gray-700 transition mb-3"
-            >
-              <ChevronUp className="w-6 h-6 text-green-500" />
-            </button>
-            <span className="text-2xl font-bold mb-2">{attended}</span>
-            <button
-              onClick={() => setAttended(Math.max(0, attended - 1))}
-              className="p-3 rounded-full bg-gray-800 hover:bg-gray-700 transition"
-            >
-              <ChevronDown className="w-6 h-6 text-gray-500" />
-            </button>
-            <p className="text-gray-400 text-sm mt-3">Attended</p>
-          </div>
-
-          {/* Missed */}
-          <div className="flex flex-col items-center">
-            <button
-              onClick={() => setMissed(missed + 1)}
-              className="p-3 rounded-full bg-gray-800 hover:bg-gray-700 transition mb-3"
-            >
-              <ChevronUp className="w-6 h-6 text-gray-500" />
-            </button>
-            <span className="text-2xl font-bold mb-2">{missed}</span>
-            <button
-              onClick={() => setMissed(Math.max(0, missed - 1))}
-              className="p-3 rounded-full bg-gray-800 hover:bg-gray-700 transition"
-            >
-              <ChevronDown className="w-6 h-6 text-gray-500" />
-            </button>
-            <p className="text-gray-400 text-sm mt-3">Missed</p>
-          </div>
-
-          {/* Requirement */}
-          <div className="flex flex-col items-center">
-            <button
-              onClick={() => setRequirement((prev) => Math.min(100, prev + 5))}
-              className="p-3 rounded-full bg-gray-800 hover:bg-gray-700 transition mb-3"
-              aria-label="Increase requirement"
-            >
-              <ChevronUp className="w-6 h-6 text-gray-500" />
-            </button>
-
-            {/* Numeric input allows typing and shows %; clamp to 0-100 */}
-            <div className="flex items-center gap-2 mb-2">
-              <input
-                type="number"
-                min={0}
-                max={100}
-                step={1}
-                value={requirement}
-                onChange={(e) => {
-                  const v = Number(e.target.value)
-                  if (Number.isNaN(v)) return
-                  setRequirement(Math.min(100, Math.max(0, Math.round(v))))
-                }}
-                className="w-20 text-center bg-transparent text-2xl font-bold text-gray-400 border-b border-gray-700 pb-1 focus:outline-none"
-                aria-label="Requirement percentage"
-              />
-              <span className="text-gray-400">%</span>
-            </div>
-
-            <button
-              onClick={() => setRequirement((prev) => Math.max(0, prev - 5))}
-              className="p-3 rounded-full bg-gray-800 hover:bg-gray-700 transition"
-              aria-label="Decrease requirement"
-            >
-              <ChevronDown className="w-6 h-6 text-green-500" />
-            </button>
-            <p className="text-gray-400 text-sm mt-3">Requirement</p>
-          </div>
-        </div>
-
-        {/* Glow Color */}
-        <div className="mb-8">
-          <label className="block text-gray-400 text-sm mb-3">Glow Color</label>
-          <div className="grid grid-cols-6 gap-2">
-            {GLOW_COLORS.map((color) => (
-              <button
-                key={color.value}
-                onClick={() => setGlowColor(color.value)}
-                className={`w-full aspect-square rounded-lg transition border-2 ${
-                  glowColor === color.value ? "border-white" : "border-gray-700"
-                }`}
-                style={{ backgroundColor: color.value }}
-                title={color.name}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div className="mb-8">
-          <label className="block text-gray-400 text-sm mb-3">Tags</label>
-
-          {/* Existing Tags as Checkboxes */}
-          {existingTags.length > 0 && (
-            <div className="mb-4 space-y-2">
-              {existingTags.map((tag) => (
-                <label key={tag} className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={selectedTags.includes(tag)}
-                    onChange={() => handleToggleExistingTag(tag)}
-                    className="w-4 h-4 rounded bg-gray-800 border-gray-700 accent-green-500"
-                  />
-                  <span className="text-gray-400 text-sm">{tag}</span>
-                </label>
-              ))}
-            </div>
-          )}
-
-          {/* Add New Tag */}
-          <div className="flex gap-2 mb-3">
-            <input
-              type="text"
-              value={newTag}
-              onChange={(e) => setNewTag(e.target.value)}
-              onKeyPress={(e) => e.key === "Enter" && handleAddTag()}
-              placeholder="Add new tag"
-              className="flex-1 bg-gray-800 text-gray-400 placeholder-gray-600 border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-green-500 transition"
+        <div className="space-y-6 py-4">
+          {/* Subject Name */}
+          <div className="space-y-2">
+            <Label htmlFor="subject-name">Subject Name</Label>
+            <Input
+              id="subject-name"
+              value={subjectName}
+              onChange={(e) => setSubjectName(e.target.value)}
+              placeholder="e.g., Physics, Mathematics, Chemistry"
+              className="text-lg"
             />
-            <button
-              onClick={handleAddTag}
-              className="px-3 py-2 bg-green-500 hover:bg-green-600 text-black rounded text-sm font-medium transition"
-            >
-              Add
-            </button>
           </div>
 
-          {/* Selected Tags Display */}
-          {selectedTags.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {selectedTags.map((tag) => (
-                <div
-                  key={tag}
-                  className="bg-green-500 text-black px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2"
-                >
-                  {tag}
-                  <button onClick={() => handleRemoveTag(tag)} className="hover:opacity-70 transition">
-                    <X className="w-4 h-4" />
-                  </button>
+          {/* Stats Grid */}
+          <div className="grid grid-cols-3 gap-4">
+            {/* Attended */}
+            <div className="space-y-2">
+              <Label className="text-xs text-center block">Attended</Label>
+              <Card className="p-3">
+                <div className="flex flex-col items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setAttended(attended + 1)}
+                    className="h-8 w-8"
+                  >
+                    <ChevronUp className="h-4 w-4" />
+                  </Button>
+                  <span className="text-2xl font-bold">{attended}</span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setAttended(Math.max(0, attended - 1))}
+                    className="h-8 w-8"
+                  >
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
                 </div>
+              </Card>
+            </div>
+
+            {/* Missed */}
+            <div className="space-y-2">
+              <Label className="text-xs text-center block">Missed</Label>
+              <Card className="p-3">
+                <div className="flex flex-col items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setMissed(missed + 1)}
+                    className="h-8 w-8"
+                  >
+                    <ChevronUp className="h-4 w-4" />
+                  </Button>
+                  <span className="text-2xl font-bold">{missed}</span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setMissed(Math.max(0, missed - 1))}
+                    className="h-8 w-8"
+                  >
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </div>
+              </Card>
+            </div>
+
+            {/* Requirement */}
+            <div className="space-y-2">
+              <Label className="text-xs text-center block">Requirement</Label>
+              <Card className="p-3">
+                <div className="flex flex-col items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setRequirement((prev) => Math.min(100, prev + 5))}
+                    className="h-8 w-8"
+                  >
+                    <ChevronUp className="h-4 w-4" />
+                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Input
+                      type="number"
+                      min={1}
+                      max={100}
+                      value={requirement}
+                      onChange={(e) => {
+                        const v = Number(e.target.value)
+                        if (!isNaN(v)) setRequirement(Math.min(100, Math.max(1, v)))
+                      }}
+                      className="w-14 text-center text-lg font-bold h-8 px-1"
+                    />
+                    <span className="text-sm text-muted-foreground">%</span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setRequirement((prev) => Math.max(1, prev - 5))}
+                    className="h-8 w-8"
+                  >
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </div>
+              </Card>
+            </div>
+          </div>
+
+          {/* Glow Color */}
+          <div className="space-y-2">
+            <Label>Progress Color</Label>
+            <div className="grid grid-cols-6 gap-2">
+              {GLOW_COLORS.map((color) => (
+                <button
+                  key={color.value}
+                  onClick={() => setGlowColor(color.value)}
+                  className={`w-full aspect-square rounded-lg transition border-2 ${
+                    glowColor === color.value ? "border-primary ring-2 ring-primary/20" : "border-border"
+                  }`}
+                  style={{ backgroundColor: color.value }}
+                  title={color.name}
+                  aria-label={`Select ${color.name} color`}
+                />
               ))}
             </div>
-          )}
+          </div>
+
+          {/* Tags */}
+          <div className="space-y-3">
+            <Label>Tags</Label>
+
+            {/* Existing Tags */}
+            {existingTags.length > 0 && (
+              <div className="space-y-2">
+                {existingTags.map((tag) => (
+                  <div key={tag} className="flex items-center gap-2">
+                    <Checkbox
+                      id={`tag-${tag}`}
+                      checked={selectedTags.includes(tag)}
+                      onCheckedChange={() => handleToggleExistingTag(tag)}
+                    />
+                    <Label
+                      htmlFor={`tag-${tag}`}
+                      className="text-sm font-normal cursor-pointer"
+                    >
+                      {tag}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Add New Tag */}
+            <div className="flex gap-2">
+              <Input
+                value={newTag}
+                onChange={(e) => setNewTag(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleAddTag()}
+                placeholder="Create new tag"
+                className="flex-1"
+              />
+              <Button
+                onClick={handleAddTag}
+                variant="secondary"
+                size="sm"
+                disabled={!newTag.trim()}
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Add
+              </Button>
+            </div>
+
+            {/* Selected Tags */}
+            {selectedTags.length > 0 && (
+              <div className="flex flex-wrap gap-2 pt-2">
+                {selectedTags.map((tag) => (
+                  <Badge key={tag} variant="default" className="pl-3 pr-1 py-1">
+                    {tag}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleRemoveTag(tag)}
+                      className="h-4 w-4 ml-1 hover:bg-transparent"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-3 pt-4">
+            <Button variant="outline" onClick={onClose} className="flex-1">
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={!canSave}
+              className="flex-1"
+            >
+              Save Changes
+            </Button>
+          </div>
         </div>
-
-        {/* Save Button */}
-        <button
-          onClick={handleSave}
-          className="w-full py-3 bg-green-500 hover:bg-green-600 transition rounded-full text-black font-medium"
-        >
-          Save Changes
-        </button>
-
-        {/* Close on background click */}
-        <div className="fixed inset-0 -z-10" onClick={onClose} />
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }

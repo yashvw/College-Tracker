@@ -1,7 +1,18 @@
 "use client"
 
 import { useEffect, useState, useRef } from "react"
+import { ChevronLeft, ChevronRight, Plus, Edit, Trash2 } from "lucide-react"
 import DayScheduleModal, { type ScheduleEntry } from "./day-schedule-modal"
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 interface Subject {
   id: string
@@ -26,8 +37,6 @@ export default function NotificationSchedule({ subjects }: Props) {
   const [openDay, setOpenDay] = useState<number | null>(null)
   const [editing, setEditing] = useState<ScheduleEntry | null>(null)
   const [showManage, setShowManage] = useState(false)
-
-  // Removed duplicate localStorage load effect, now handled in useState initializer
 
   useEffect(() => {
     try {
@@ -65,7 +74,7 @@ export default function NotificationSchedule({ subjects }: Props) {
   const touchStartX = useRef<number | null>(null)
 
   useEffect(() => {
-    // clamp currentDay if schedule changes (not strictly necessary but safe)
+    // clamp currentDay if schedule changes
     if (currentDay < 0) setCurrentDay(0)
     if (currentDay > 6) setCurrentDay(6)
   }, [currentDay])
@@ -90,117 +99,152 @@ export default function NotificationSchedule({ subjects }: Props) {
   const entriesForDay = schedule.filter((s) => s.day === currentDay)
 
   return (
-      <div
-        className="p-0 flex flex-col items-stretch w-full max-w-none md:max-w-4xl lg:max-w-5xl mx-auto h-[60vh] md:h-[70vh] max-h-[88vh] md:max-h-none overflow-hidden md:overflow-visible"
-        onTouchStart={onTouchStart}
-        onTouchEnd={onTouchEnd}
-      >
-        <div className="flex items-center mb-2 w-full">
-          <div className="flex-1 flex items-center">
-            <button
-              onClick={() => setCurrentDay((d) => Math.max(0, d - 1))}
-              className="px-2 py-2 bg-gray-700 rounded hover:bg-gray-600 text-xl font-bold flex items-center justify-center"
-              aria-label="Previous day"
-            >
-              &#x25C0;
-            </button>
-          </div>
-          <div className="flex-1 flex items-center justify-center">
-            <h3 className="text-2xl md:text-4xl font-extrabold tracking-wide text-white px-2 text-center">{dayNames[currentDay]}</h3>
-          </div>
-          <div className="flex-1 flex items-center justify-end">
-            <button
-              onClick={() => setCurrentDay((d) => Math.min(6, d + 1))}
-              className="px-2 py-2 bg-gray-700 rounded hover:bg-gray-600 text-xl font-bold flex items-center justify-center"
-              aria-label="Next day"
-            >
-              &#x25B6;
-            </button>
-          </div>
+    <div
+      className="p-0 flex flex-col items-stretch w-full max-w-none md:max-w-4xl lg:max-w-5xl mx-auto h-[60vh] md:h-[70vh] max-h-[88vh] md:max-h-none overflow-hidden md:overflow-visible"
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
+    >
+      {/* Day Navigation Header */}
+      <div className="flex items-center mb-4 w-full gap-4">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => setCurrentDay((d) => Math.max(0, d - 1))}
+          disabled={currentDay === 0}
+          aria-label="Previous day"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </Button>
+
+        <div className="flex-1 text-center">
+          <h3 className="text-2xl md:text-4xl font-extrabold tracking-wide text-foreground">
+            {dayNames[currentDay]}
+          </h3>
         </div>
 
-        <div className="flex items-center gap-3 justify-center mb-2">
-          <button
-            onClick={() => { setEditing(null); setOpenDay(currentDay) }}
-            aria-label="Add schedule entry"
-            className="w-10 h-10 rounded-full bg-gray-700 hover:bg-gray-600 flex items-center justify-center text-2xl font-bold text-white"
-          >
-            +
-          </button>
-          <button onClick={() => setShowManage(true)} className="px-3 py-2 bg-gray-700 rounded hover:bg-gray-600 text-sm">Manage</button>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => setCurrentDay((d) => Math.min(6, d + 1))}
+          disabled={currentDay === 6}
+          aria-label="Next day"
+        >
+          <ChevronRight className="h-5 w-5" />
+        </Button>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex items-center gap-3 justify-center mb-4">
+        <Button
+          onClick={() => { setEditing(null); setOpenDay(currentDay) }}
+          aria-label="Add schedule entry"
+          className="gap-2"
+        >
+          <Plus className="h-4 w-4" />
+          Add Entry
+        </Button>
+        <Button
+          onClick={() => setShowManage(true)}
+          variant="outline"
+          className="gap-2"
+        >
+          <Edit className="h-4 w-4" />
+          Manage
+        </Button>
+      </div>
+
+      {/* Entries for Current Day */}
+      {entriesForDay.length === 0 ? (
+        <div className="text-muted-foreground text-center py-8">
+          No entries for {dayNames[currentDay]}. Tap "Add Entry" to create one.
         </div>
-
-        {entriesForDay.length === 0 ? (
-          <div className="text-gray-400">No entries for {dayNames[currentDay]}. Tap + to add.</div>
-        ) : (
-          <div className="space-y-3">
-            {entriesForDay.map((s) => {
-              const subj = subjects.find((x) => x.name === s.subjectName)
-              return (
-                <div key={s.id} className="bg-gray-800 rounded-lg shadow p-2 border border-gray-700">
-                  <div className="font-semibold text-white">{s.subjectName}</div>
-                  {subj?.tags && subj.tags.length > 0 ? (
-                    <div className="mt-1 flex flex-wrap gap-2">
-                      {subj.tags.map((t) => (
-                        <span key={t} className="text-xs bg-gray-700 text-gray-200 rounded-md px-2 py-0.5">{t}</span>
-                      ))}
-                    </div>
-                  ) : null}
-                  <div className="text-xs text-gray-400 mt-2">{s.startTime} — {s.endTime}</div>
-                </div>
-              )
-            })}
-          </div>
-        )}
-
-      {showManage && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60" onClick={() => setShowManage(false)}>
-          <div className="bg-gray-900 rounded-2xl p-4 md:p-6 w-full max-w-none md:max-w-4xl h-[86vh] md:h-[80vh] mx-4 md:mx-auto flex flex-col" onClick={(e) => e.stopPropagation()}>
-            <div className="p-2 md:p-0 flex-1 flex flex-col justify-center">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold">Manage Notification Schedule — {dayNames[currentDay]}</h3>
-                <button onClick={() => setShowManage(false)} className="px-2 py-1 bg-gray-800 rounded">Close</button>
-              </div>
-
-              <div className="space-y-2 max-h-[46vh] md:max-h-72 overflow-y-auto">
-                {schedule.filter((e) => e.day === currentDay).length === 0 ? (
-                  <div className="text-gray-400">No scheduled entries for this day</div>
-                ) : (
-                  <>
-                    {schedule
-                      .filter((e) => e.day === currentDay)
-                      .map((e) => {
-                        const subj = subjects.find((x) => x.name === e.subjectName)
-                        return (
-                          <div key={e.id} className="bg-gray-800 rounded p-3 flex items-center justify-between">
-                            <div>
-                              <div className="font-semibold">{e.subjectName}</div>
-                              <div className="text-xs text-gray-400">{e.startTime} — {e.endTime}</div>
-                              {subj?.tags && subj.tags.length > 0 ? (
-                                <div className="mt-1 flex flex-wrap gap-2">
-                                  {subj.tags.map((t) => (
-                                    <span key={t} className="text-xs bg-gray-700 text-gray-200 rounded-md px-2 py-0.5">{t}</span>
-                                  ))}
-                                </div>
-                              ) : null}
-                            </div>
-                            <div className="flex gap-2">
-                              <button onClick={() => { setEditing(e); setOpenDay(e.day); setShowManage(false) }} className="px-3 py-1 bg-gray-700 rounded">Edit</button>
-                              <button onClick={() => handleRemove(e.id)} className="px-3 py-1 bg-red-900 rounded">Delete</button>
-                            </div>
-                          </div>
-                        )
-                      })}
-                  </>
+      ) : (
+        <div className="space-y-3">
+          {entriesForDay.map((s) => {
+            const subj = subjects.find((x) => x.name === s.subjectName)
+            return (
+              <Card key={s.id} className="p-4 hover:bg-accent/50 transition">
+                <div className="font-semibold text-foreground mb-2">{s.subjectName}</div>
+                {subj?.tags && subj.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {subj.tags.map((t) => (
+                      <Badge key={t} variant="secondary">{t}</Badge>
+                    ))}
+                  </div>
                 )}
-              </div>
-
-              {/* Removed bottom Close button for cleaner UI */}
-            </div>
-          </div>
+                <div className="text-sm text-muted-foreground">
+                  {s.startTime} — {s.endTime}
+                </div>
+              </Card>
+            )
+          })}
         </div>
       )}
 
+      {/* Manage Modal */}
+      {showManage && (
+        <Dialog open={showManage} onOpenChange={setShowManage}>
+          <DialogContent className="sm:max-w-[600px] max-h-[86vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Manage Notification Schedule</DialogTitle>
+              <DialogDescription>
+                {dayNames[currentDay]} — Edit or delete scheduled notifications
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-3 py-4">
+              {schedule.filter((e) => e.day === currentDay).length === 0 ? (
+                <p className="text-muted-foreground text-center py-8">
+                  No scheduled entries for this day
+                </p>
+              ) : (
+                schedule
+                  .filter((e) => e.day === currentDay)
+                  .map((e) => {
+                    const subj = subjects.find((x) => x.name === e.subjectName)
+                    return (
+                      <Card key={e.id} className="p-4 flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="font-semibold text-foreground">{e.subjectName}</div>
+                          <div className="text-sm text-muted-foreground mt-1">
+                            {e.startTime} — {e.endTime}
+                          </div>
+                          {subj?.tags && subj.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              {subj.tags.map((t) => (
+                                <Badge key={t} variant="secondary">{t}</Badge>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex gap-2 ml-4">
+                          <Button
+                            onClick={() => { setEditing(e); setOpenDay(e.day); setShowManage(false) }}
+                            variant="outline"
+                            size="sm"
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Edit
+                          </Button>
+                          <Button
+                            onClick={() => handleRemove(e.id)}
+                            variant="destructive"
+                            size="sm"
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Delete
+                          </Button>
+                        </div>
+                      </Card>
+                    )
+                  })
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Day Schedule Modal */}
       {openDay !== null && (
         <DayScheduleModal
           isOpen={true}

@@ -6,6 +6,22 @@ import { useState, useEffect } from "react"
 import { X, Trash2, Download, Upload, Settings2, Bell, BellOff, Send, CheckCircle, AlertCircle } from "lucide-react"
 import { toast } from "sonner"
 import { NotificationStatus } from "./notification-status"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
+import { Card } from "@/components/ui/card"
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
 
 interface Subject {
   id: string
@@ -590,91 +606,91 @@ export default function TagManagementModal({
     }
   }
 
-  if (!isOpen) return null
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={onClose}>
-      <div
-        className="bg-gray-900 rounded-2xl p-8 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between mb-6">
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
           <div className="flex items-center gap-2">
-            <Settings2 className="w-6 h-6 text-gray-400" />
-            <h2 className="text-2xl font-bold">Settings</h2>
+            <Settings2 className="w-5 h-5 text-muted-foreground" />
+            <DialogTitle>Settings</DialogTitle>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-gray-800 rounded-lg transition">
-            <X className="w-6 h-6" />
-          </button>
-        </div>
+          <DialogDescription>
+            Manage notifications, tags, and data backup
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-6 py-4">
 
         {notificationSupported && (
           <>
-            <div className="mb-8">
-              <h3 className="text-lg font-semibold mb-4 text-gray-300">Notifications</h3>
-              <div className="bg-gray-800 p-4 rounded-lg space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    {localPermission === 'granted' ? (
-                      <Bell className="w-5 h-5 text-blue-500" />
-                    ) : (
-                      <BellOff className="w-5 h-5 text-gray-500" />
-                    )}
-                    <div>
-                      <p className="text-gray-300 font-medium">Device Notifications</p>
-                      <p className="text-gray-500 text-sm">
-                        {localPermission === 'granted'
-                          ? 'Notifications enabled'
-                          : 'Enable notifications for reminders and updates'}
-                      </p>
-                    </div>
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="notifications">
+                <AccordionTrigger className="text-lg font-semibold">
+                  <div className="flex items-center gap-2">
+                    <Bell className="w-5 h-5" />
+                    Notifications
                   </div>
-                  <button
-                    onClick={async () => {
-                      setIsEnablingNotifications(true)
-                      try {
-                        if (!onEnableNotifications) {
-                          console.error('onEnableNotifications callback not provided')
-                          toast.error('Unable to enable notifications. Please refresh the page and try again.')
-                          setIsEnablingNotifications(false)
-                          return
-                        }
-                        console.log('🔔 Button clicked - calling onEnableNotifications immediately')
-                        // Call the function directly without any delays
-                        await onEnableNotifications()
-                        console.log('🔔 Permission request completed')
-                        toast.success('Notifications enabled! Tap "Send Test" to verify.')
-                      } catch (error) {
-                        console.error('Error enabling notifications:', error)
-                        toast.error('Failed to enable notifications: ' + String(error))
-                      } finally {
-                        setIsEnablingNotifications(false)
-                        // Force update the UI by re-checking permission
-                        setTimeout(() => {
-                          if ('Notification' in window) {
-                            setLocalPermission(Notification.permission)
+                </AccordionTrigger>
+                <AccordionContent>
+                  <Card className="p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        {localPermission === 'granted' ? (
+                          <Bell className="w-5 h-5 text-blue-500" />
+                        ) : (
+                          <BellOff className="w-5 h-5 text-muted-foreground" />
+                        )}
+                        <div>
+                          <p className="text-foreground font-medium">Device Notifications</p>
+                          <p className="text-muted-foreground text-sm">
+                            {localPermission === 'granted'
+                              ? 'Notifications enabled'
+                              : 'Enable notifications for reminders and updates'}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={async () => {
+                          setIsEnablingNotifications(true)
+                          try {
+                            if (!onEnableNotifications) {
+                              console.error('onEnableNotifications callback not provided')
+                              toast.error('Unable to enable notifications. Please refresh the page and try again.')
+                              setIsEnablingNotifications(false)
+                              return
+                            }
+                            console.log('🔔 Button clicked - calling onEnableNotifications immediately')
+                            await onEnableNotifications()
+                            console.log('🔔 Permission request completed')
+                            toast.success('Notifications enabled! Tap "Send Test" to verify.')
+                          } catch (error) {
+                            console.error('Error enabling notifications:', error)
+                            toast.error('Failed to enable notifications: ' + String(error))
+                          } finally {
+                            setIsEnablingNotifications(false)
+                            setTimeout(() => {
+                              if ('Notification' in window) {
+                                setLocalPermission(Notification.permission)
+                              }
+                            }, 500)
                           }
-                        }, 500)
-                      }
-                    }}
-                    disabled={localPermission === 'granted' || isEnablingNotifications}
-                    className={`px-4 py-2 rounded-lg transition font-medium ${
-                      localPermission === 'granted'
-                        ? 'bg-green-600 text-white cursor-default'
-                        : 'bg-blue-600 hover:bg-blue-700 text-white'
-                    } disabled:opacity-75`}
-                  >
-                    {isEnablingNotifications ? 'Enabling...' : localPermission === 'granted' ? 'Enabled' : 'Enable'}
-                  </button>
-                </div>
+                        }}
+                        disabled={localPermission === 'granted' || isEnablingNotifications}
+                        variant={localPermission === 'granted' ? 'default' : 'default'}
+                        className={localPermission === 'granted' ? 'bg-green-600 hover:bg-green-700' : ''}
+                      >
+                        {isEnablingNotifications ? 'Enabling...' : localPermission === 'granted' ? 'Enabled' : 'Enable'}
+                      </Button>
+                    </div>
 
                 {/* Test button - only shows when notifications are enabled */}
                 {localPermission === 'granted' && (
-                  <div className="pt-3 border-t border-gray-700">
-                    <button
+                  <div className="pt-3 border-t border-border">
+                    <Button
                       onClick={sendTestNotification}
                       disabled={isSendingTest}
-                      className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition font-medium flex items-center justify-center gap-2 disabled:opacity-75 disabled:cursor-not-allowed"
+                      variant="secondary"
+                      className="w-full gap-2"
                     >
                       {isSendingTest ? (
                         <>
@@ -687,7 +703,7 @@ export default function TagManagementModal({
                           <span>Send Test Notification</span>
                         </>
                       )}
-                    </button>
+                    </Button>
 
                     {/* PWA status indicator */}
                     <div className="mt-2 flex items-center gap-2 text-xs">
@@ -708,15 +724,15 @@ export default function TagManagementModal({
 
                 {/* Scheduled Notifications Test */}
                 {localPermission === 'granted' && (
-                  <div className="pt-3 border-t border-gray-700">
-                    <p className="text-sm text-gray-400 mb-3">Schedule Auto-Notification (Test)</p>
+                  <div className="pt-3 border-t border-border">
+                    <Label className="text-sm mb-3 block">Schedule Auto-Notification (Test)</Label>
 
                     {/* Delay selector and schedule button */}
                     <div className="flex gap-2 mb-3">
                       <select
                         value={selectedDelay}
                         onChange={(e) => setSelectedDelay(Number(e.target.value))}
-                        className="flex-1 px-3 py-2 bg-gray-700 text-white rounded-lg border border-gray-600 focus:outline-none focus:border-purple-500"
+                        className="flex-1 px-3 py-2 bg-background text-foreground rounded-lg border border-input focus:outline-none focus:ring-2 focus:ring-ring"
                       >
                         <option value={1}>1 minute</option>
                         <option value={2}>2 minutes</option>
@@ -727,174 +743,216 @@ export default function TagManagementModal({
                         <option value={30}>30 minutes</option>
                       </select>
 
-                      <button
+                      <Button
                         onClick={scheduleNotification}
                         disabled={isScheduling}
-                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition font-medium disabled:opacity-75 disabled:cursor-not-allowed whitespace-nowrap"
+                        className="whitespace-nowrap"
                       >
                         {isScheduling ? 'Scheduling...' : 'Schedule'}
-                      </button>
+                      </Button>
                     </div>
 
                     {/* Active scheduled notifications */}
                     {scheduledNotifications.length > 0 && (
                       <div className="space-y-2">
-                        <p className="text-xs text-gray-500 mb-2">Active Schedules:</p>
+                        <p className="text-xs text-muted-foreground mb-2">Active Schedules:</p>
                         {scheduledNotifications.map((notification) => (
-                          <div
+                          <Card
                             key={notification.id}
-                            className="flex items-center justify-between bg-gray-700 px-3 py-2 rounded-lg"
+                            className="flex items-center justify-between px-3 py-2"
                           >
                             <div className="flex items-center gap-2">
                               <div className="h-2 w-2 bg-blue-500 rounded-full animate-pulse"></div>
-                              <span className="text-sm text-gray-300">
+                              <span className="text-sm text-foreground">
                                 Sending in {formatCountdown(notification.countdown)}
                               </span>
                             </div>
-                            <button
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               onClick={() => cancelScheduledNotification(notification.id)}
-                              className="text-xs text-red-400 hover:text-red-300 transition"
+                              className="text-xs text-destructive hover:text-destructive h-auto p-1"
                             >
                               Cancel
-                            </button>
-                          </div>
+                            </Button>
+                          </Card>
                         ))}
-                        <p className="text-xs text-gray-500 mt-2">
+                        <p className="text-xs text-muted-foreground mt-2">
                           💡 Close the app to test background notifications
                         </p>
                       </div>
                     )}
                   </div>
                 )}
-              </div>
-            </div>
+              </Card>
+            </AccordionContent>
+          </AccordionItem>
 
-            <div className="h-px bg-gray-700 mb-8"></div>
-
-            {/* Active Notification Schedules Status */}
-            {localPermission === 'granted' && (
-              <div className="mb-8">
+          {/* Active Notification Schedules Status */}
+          {localPermission === 'granted' && (
+            <AccordionItem value="schedule-status">
+              <AccordionTrigger className="text-lg font-semibold">
+                Notification Schedule Status
+              </AccordionTrigger>
+              <AccordionContent>
                 <NotificationStatus />
-              </div>
-            )}
-
-            <div className="h-px bg-gray-700 mb-8"></div>
+              </AccordionContent>
+            </AccordionItem>
+          )}
+        </Accordion>
           </>
         )}
 
-        <div className="mb-8">
-          <h3 className="text-lg font-semibold mb-4 text-gray-300">Manage Tags</h3>
-          {tags.length === 0 ? (
-            <p className="text-gray-500 text-sm">No tags created yet</p>
-          ) : (
-            <div className="space-y-2">
-              {tags.map((tag) => (
-                <div key={tag} className="flex items-center justify-between bg-gray-800 p-3 rounded-lg">
-                  <span className="text-gray-300">{tag}</span>
-                  {deleteConfirmTag === tag ? (
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setDeleteConfirmTag(null)}
-                        className="px-2 py-1 text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 rounded transition"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={() => {
-                          onDeleteTag(tag)
-                          setDeleteConfirmTag(null)
-                        }}
-                        className="px-2 py-1 text-xs bg-red-600 hover:bg-red-700 text-white rounded transition"
-                      >
-                        Confirm
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setDeleteConfirmTag(tag)}
-                      className="p-2 hover:bg-gray-700 rounded transition text-red-500 hover:text-red-400"
-                      title="Delete tag"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  )}
+        <Accordion type="single" collapsible className="w-full">
+          <AccordionItem value="tags">
+            <AccordionTrigger className="text-lg font-semibold">
+              <div className="flex items-center gap-2">
+                <Settings2 className="w-5 h-5" />
+                Manage Tags
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              {tags.length === 0 ? (
+                <p className="text-muted-foreground text-sm">No tags created yet</p>
+              ) : (
+                <div className="space-y-2">
+                  {tags.map((tag) => (
+                    <Card key={tag} className="flex items-center justify-between p-3">
+                      <span className="text-foreground">{tag}</span>
+                      {deleteConfirmTag === tag ? (
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={() => setDeleteConfirmTag(null)}
+                            variant="outline"
+                            size="sm"
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            onClick={() => {
+                              onDeleteTag(tag)
+                              setDeleteConfirmTag(null)
+                            }}
+                            variant="destructive"
+                            size="sm"
+                          >
+                            Confirm
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button
+                          onClick={() => setDeleteConfirmTag(tag)}
+                          variant="ghost"
+                          size="icon"
+                          className="text-destructive hover:text-destructive"
+                          title="Delete tag"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </Card>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+              )}
+            </AccordionContent>
+          </AccordionItem>
 
-        <div className="h-px bg-gray-700 mb-8"></div>
-
-        <div className="mb-8">
-          <h3 className="text-lg font-semibold mb-4 text-gray-300">Backup & Restore</h3>
-          <p className="text-gray-500 text-sm mb-4">
-            Export your data as a ZIP file containing individual Excel files for each feature including attendance
-            tracker, to-do list, habits tracker, exams/assignments, notifications, and tags. Import to restore on
-            another device.
-          </p>
-
-          <div className="space-y-3">
-            <button
-              onClick={handleExport}
-              disabled={isExporting}
-              className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white rounded-lg transition font-medium flex items-center justify-center gap-2"
-            >
-              <Download className="w-4 h-4" />
-              {isExporting ? "Exporting..." : "Export Data as ZIP"}
-            </button>
-
-            <label className="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition font-medium flex items-center justify-center gap-2 cursor-pointer">
-              <Upload className="w-4 h-4" />
-              {isImporting ? "Importing..." : "Import Data"}
-              <input type="file" accept=".csv,.zip" onChange={handleImport} className="hidden" disabled={isImporting} />
-            </label>
-          </div>
-        </div>
-
-        <div className="h-px bg-gray-700 mb-8"></div>
-
-        <div>
-          <h3 className="text-lg font-semibold mb-4 text-gray-300">Reset Data</h3>
-          <p className="text-gray-500 text-sm mb-4">
-            Clear all subjects, tasks, and tags to start fresh with a new year. This action cannot be undone.
-          </p>
-
-          {resetConfirm ? (
-            <div className="space-y-3">
-              <div className="bg-red-900 bg-opacity-30 border border-red-700 rounded-lg p-3">
-                <p className="text-red-300 text-sm font-medium">Are you sure? This will delete everything.</p>
+          <AccordionItem value="backup">
+            <AccordionTrigger className="text-lg font-semibold">
+              <div className="flex items-center gap-2">
+                <Download className="w-5 h-5" />
+                Backup & Restore
               </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setResetConfirm(false)}
-                  className="flex-1 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition font-medium"
+            </AccordionTrigger>
+            <AccordionContent>
+              <p className="text-muted-foreground text-sm mb-4">
+                Export your data as a ZIP file containing individual Excel files for each feature including attendance
+                tracker, to-do list, habits tracker, exams/assignments, notifications, and tags. Import to restore on
+                another device.
+              </p>
+
+              <div className="space-y-3">
+                <Button
+                  onClick={handleExport}
+                  disabled={isExporting}
+                  variant="default"
+                  className="w-full gap-2"
                 >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    onResetAllData()
-                    setResetConfirm(false)
-                    onClose()
-                  }}
-                  className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition font-medium"
-                >
-                  Reset All
-                </button>
+                  <Download className="w-4 h-4" />
+                  {isExporting ? "Exporting..." : "Export Data as ZIP"}
+                </Button>
+
+                <Label className="w-full cursor-pointer">
+                  <Button
+                    variant="secondary"
+                    className="w-full gap-2"
+                    disabled={isImporting}
+                    asChild
+                  >
+                    <span>
+                      <Upload className="w-4 h-4" />
+                      {isImporting ? "Importing..." : "Import Data"}
+                    </span>
+                  </Button>
+                  <input type="file" accept=".csv,.zip" onChange={handleImport} className="hidden" disabled={isImporting} />
+                </Label>
               </div>
-            </div>
-          ) : (
-            <button
-              onClick={() => setResetConfirm(true)}
-              className="w-full px-4 py-2 bg-red-900 hover:bg-red-800 text-red-300 rounded-lg transition font-medium"
-            >
-              Reset All Data
-            </button>
-          )}
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="reset">
+            <AccordionTrigger className="text-lg font-semibold">
+              <div className="flex items-center gap-2">
+                <Trash2 className="w-5 h-5" />
+                Reset Data
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <p className="text-muted-foreground text-sm mb-4">
+                Clear all subjects, tasks, and tags to start fresh with a new year. This action cannot be undone.
+              </p>
+
+              {resetConfirm ? (
+                <div className="space-y-3">
+                  <Card className="bg-destructive/10 border-destructive p-3">
+                    <p className="text-destructive text-sm font-medium">Are you sure? This will delete everything.</p>
+                  </Card>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => setResetConfirm(false)}
+                      variant="outline"
+                      className="flex-1"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        onResetAllData()
+                        setResetConfirm(false)
+                        onClose()
+                      }}
+                      variant="destructive"
+                      className="flex-1"
+                    >
+                      Reset All
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Button
+                  onClick={() => setResetConfirm(true)}
+                  variant="destructive"
+                  className="w-full"
+                >
+                  Reset All Data
+                </Button>
+              )}
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }
 
