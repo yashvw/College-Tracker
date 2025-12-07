@@ -220,12 +220,12 @@ export default function DayScheduleModal({ isOpen, onClose, day, subjects, initi
           </div>
 
           {/* Notification Settings */}
-          <div className="space-y-4">
+          <div className="space-y-3">
             <Label>Notification</Label>
 
-            <div className="flex gap-3">
-              <div className="flex-1">
-                <Label htmlFor="notify-offset" className="text-xs">Minutes</Label>
+            <div className="space-y-3 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="notify-offset" className="text-xs text-muted-foreground">Minutes</Label>
                 <Input
                   id="notify-offset"
                   type="number"
@@ -237,8 +237,8 @@ export default function DayScheduleModal({ isOpen, onClose, day, subjects, initi
                 />
               </div>
 
-              <div className="flex-1">
-                <Label className="text-xs">When</Label>
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">When</Label>
                 <Select value={notifyWhen} onValueChange={(v) => setNotifyWhen(v as "before" | "after")}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select" />
@@ -252,7 +252,7 @@ export default function DayScheduleModal({ isOpen, onClose, day, subjects, initi
             </div>
 
             <p className="text-xs text-muted-foreground">
-              Get notified {notifyOffset || "___"} minutes {notifyWhen} the class
+              Get notified {notifyOffset || "___"} min {notifyWhen} the class
             </p>
           </div>
 

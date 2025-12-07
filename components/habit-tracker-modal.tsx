@@ -273,9 +273,9 @@ export default function HabitTrackerModal({
   }
 
   return (
-    <div className="space-y-3 sm:space-y-4 w-full">
+    <div className="space-y-4 sm:space-y-6 w-full">
       {/* Add Habit Section */}
-      <div className="flex flex-col sm:flex-row gap-2">
+      <div className="flex flex-col sm:flex-row gap-2 mb-2">
         <Input
           type="text"
           value={newHabit}
